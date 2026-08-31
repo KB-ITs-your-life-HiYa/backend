@@ -35,6 +35,20 @@ curl http://localhost:8080/actuator/health   # -> {"status":"UP", ...}
 
 정지는 `docker compose down` (데이터는 볼륨에 남는다).
 
+## API 문서
+
+컨트롤러를 만들면 springdoc-openapi 가 스캔해서 문서를 자동으로 만든다. 명세서를 따로 쓰지 않는다.
+
+| 주소 | 내용 |
+| --- | --- |
+| http://localhost:8080/swagger-ui.html | Swagger UI (브라우저에서 바로 호출 테스트 가능) |
+| http://localhost:8080/v3/api-docs | OpenAPI 3 JSON |
+
+설명을 더 붙이고 싶으면 `@Operation(summary = "...")`, `@Schema(description = "...")` 를 쓴다.
+안 붙여도 경로 · 파라미터 · 응답 타입은 자동으로 문서에 들어간다.
+
+운영 배포 시에는 prod 프로필에 `springdoc.api-docs.enabled=false` 를 넣어 문서를 막는다.
+
 ## 설정 파일
 
 | 파일 | 용도 | 커밋 |

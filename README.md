@@ -114,10 +114,9 @@ cp src/main/resources/application-secret.properties.example \
 > 프로필 파일(`application-local.properties`) 이 import 된 파일보다 우선하기 때문이다.
 > DB 는 반드시 프로필 파일에 적을 것.
 
-## 아직 정하지 않은 것
+## 컨벤션
 
-- API 경로 규칙 (`/api/v1/...` prefix 방식)
-- 패키지 구조 컨벤션 — 도메인 우선(`com.fledge.<도메인>/{controller,service,repository,dto,domain}`) 제안
-- 인증 방식 (Supabase Auth vs 자체 JWT)
+패키지 구조 · API 규칙 · 커밋과 브랜치 규칙은 [`AGENTS.md`](./AGENTS.md) 에 있다.
+작업 전에 한 번 읽을 것.
 
-팀 논의 후 `AGENTS.md` 에 정본으로 정리한다.
+**아직 정하지 않은 것** — 인증 방식 (Supabase Auth vs 자체 JWT). 팀 논의 후 확정한다.

@@ -91,6 +91,17 @@ public void configurePathMatch(PathMatchConfigurer configurer) {
 springdoc 의 문서 엔드포인트(`/v3/api-docs`)까지 prefix 가 붙어 Swagger 가 깨지기 때문이다.
 actuator(`/actuator/health`)는 어느 쪽이든 영향받지 않는다.
 
+### CORS
+
+브라우저에서 API 를 호출할 수 있는 출처는 `cors.allowed-origin-patterns` 로 관리한다.
+프론트를 웹(`expo start` 후 `w`)으로 띄울 때 필요하고, 실기기(Expo Go)는
+네이티브 fetch 라 CORS 와 무관하다.
+
+`allowCredentials` 는 켜지 않는다. 인증은 쿠키가 아니라 `Authorization` 헤더로 하므로
+필요 없고, 켜면 출처를 와일드카드로 둘 수 없게 된다.
+
+운영 배포 시에는 prod 프로필에서 실제 도메인으로 덮어쓴다.
+
 **개인 리소스는 `/members/me/` 아래에 둔다.** 회원 식별자를 경로에 노출하지 않아
 남의 리소스를 지목할 수 없게 한다(IDOR 차단).
 경로에 `{id}`가 있으면 조회 쿼리에 소유 조건을 넣어 "내 것 중에서" 찾는다.

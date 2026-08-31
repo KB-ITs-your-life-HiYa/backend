@@ -1,0 +1,28 @@
+# 로컬 개발용 인프라.
+#   Supabase(운영 DB)에 붙기 전까지 쓰는 스탠드인 Postgres 다.
+#   Supabase 프로젝트가 생기면 application-secret.properties 로 접속 정보만 바꾸면 된다.
+#
+#   docker compose up -d   # 띄우기
+#   docker compose down    # 정지 (데이터 유지)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fledge-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: fledge
+      POSTGRES_USER: fledge
+      # 로컬 전용 더미값. 운영 비밀번호를 여기에 넣지 말 것.
+      POSTGRES_PASSWORD: fledge_local
+      TZ: Asia/Seoul
+    volumes:
+      - fledge-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fledge -d fledge"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  fledge-pgdata:

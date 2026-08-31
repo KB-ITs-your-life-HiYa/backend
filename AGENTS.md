@@ -76,7 +76,7 @@ URL만 컬렉션일 때 복수형.
 ```java
 @Override
 public void configurePathMatch(PathMatchConfigurer configurer) {
-    configurer.addPathPrefix("/api/v1", HandlerTypePredicate.forAnnotation(RestController.class));
+    configurer.addPathPrefix("/api/v1", HandlerTypePredicate.forBasePackage("com.fledge"));
 }
 ```
 
@@ -85,7 +85,11 @@ public void configurePathMatch(PathMatchConfigurer configurer) {
 @RequestMapping("/housing")     // 실제 경로 = /api/v1/housing
 ```
 
-매번 직접 쓰면 누군가 빠뜨린다. actuator(`/actuator/health`)는 영향받지 않는다.
+매번 직접 쓰면 누군가 빠뜨린다.
+
+대상을 `com.fledge` 패키지로 한정하는 이유는, `@RestController` 로 잡으면
+springdoc 의 문서 엔드포인트(`/v3/api-docs`)까지 prefix 가 붙어 Swagger 가 깨지기 때문이다.
+actuator(`/actuator/health`)는 어느 쪽이든 영향받지 않는다.
 
 **개인 리소스는 `/members/me/` 아래에 둔다.** 회원 식별자를 경로에 노출하지 않아
 남의 리소스를 지목할 수 없게 한다(IDOR 차단).

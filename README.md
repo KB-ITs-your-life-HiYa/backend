@@ -10,7 +10,7 @@ KB IT's Your Life 해커톤 · 본선 2026.09.10~12
 | 언어 · 런타임 | Java 21 (LTS) |
 | 프레임워크 | Spring Boot 3.5.16 (Web MVC, Data JPA, Validation, Actuator) |
 | 빌드 | Gradle 9.7.1 (wrapper) |
-| DB | PostgreSQL 16 — 로컬은 Docker, 운영은 Supabase |
+| DB | PostgreSQL 17 — 로컬은 Docker, 운영은 Supabase |
 | 스키마 관리 | Flyway (`src/main/resources/db/migration`) |
 | 외부 API | Gemini, 국토교통부 마이홈포털 |
 
@@ -24,7 +24,7 @@ JDK 를 여러 개 깔아둬도 된다. Gradle toolchain 이 `build.gradle` 에 
 ## 로컬 실행
 
 ```bash
-# 1. 로컬 DB 띄우기 (Postgres 16)
+# 1. 로컬 DB 띄우기 (Postgres 17)
 docker compose up -d
 
 # 2. 앱 실행
@@ -62,16 +62,45 @@ SQL 이 순서대로 적용되고, 어디까지 적용했는지가 `flyway_schem
 요약하면 파일명은 `V<YYYYMMDD>_<HHmm>__<영문설명>.sql` 이고,
 **이미 올라간 파일은 절대 수정하지 않는다.**
 
-## 설정 파일
+## 설정 파일 · 프로필
+
+DB 를 **로컬 도커** 로 쓸지 **Supabase** 로 쓸지는 프로필로 고른다.
+
+```bash
+./gradlew bootRun                                    # 로컬 도커 (기본)
+SPRING_PROFILES_ACTIVE=supabase ./gradlew bootRun    # Supabase
+```
 
 | 파일 | 용도 | 커밋 |
 | --- | --- | --- |
-| `application.properties` | 공통 설정 | ✅ |
-| `application-local.properties` | 로컬 개발용 (전부 더미값) | ✅ |
-| `application-secret.properties` | 실제 비밀값 (Supabase·Gemini·마이홈포털 키) | ❌ **금지** |
+| `application.properties` | 공통 설정 (JPA · Flyway · Swagger) | ✅ |
+| `application-local.properties` | 로컬 도커 접속 (전부 더미값) | ✅ |
+| `application-supabase.properties` | Supabase 접속 | ❌ **금지** |
+| `application-supabase.properties.example` | 위 파일의 템플릿 | ✅ |
+| `application-secret.properties` | Gemini · 마이홈포털 등 API 키 | ❌ **금지** |
 | `application-secret.properties.example` | 위 파일의 템플릿 | ✅ |
 
-비밀값이 필요해지면:
+### Supabase 로 붙기
+
+```bash
+cp src/main/resources/application-supabase.properties.example \
+   src/main/resources/application-supabase.properties
+```
+
+값을 채운 뒤 `SPRING_PROFILES_ACTIVE=supabase` 로 실행한다.
+
+**연결 문자열은 Session pooler 를 쓴다.** Dashboard > Connect > Direct 탭에 세 종류가 있다.
+
+| 종류 | 쓸 수 있나 |
+| --- | --- |
+| Direct connection (`db.<ref>.supabase.co`) | ❌ IPv6 전용이라 IPv4 망에서는 연결되지 않는다 |
+| Transaction pooler (포트 6543) | ❌ JPA 의 prepared statement 를 지원하지 않는다 |
+| **Session pooler (포트 5432, 호스트에 `pooler`)** | ✅ 이걸 쓴다 |
+
+사용자명이 `postgres.<프로젝트ref>` 형태여야 풀러다. 그냥 `postgres` 면 Direct 다.
+비밀번호는 percent-encoding 하지 않고 원본 그대로 넣는다.
+
+### API 키
 
 ```bash
 cp src/main/resources/application-secret.properties.example \
@@ -80,6 +109,10 @@ cp src/main/resources/application-secret.properties.example \
 
 `application.properties` 가 이 파일을 **optional** 로 읽으므로, 파일이 없어도 앱은 정상 기동한다.
 (그 키를 쓰는 기능만 동작하지 않는다)
+
+> ⚠️ **DB 접속 정보를 `application-secret.properties` 에 적으면 조용히 무시된다.**
+> 프로필 파일(`application-local.properties`) 이 import 된 파일보다 우선하기 때문이다.
+> DB 는 반드시 프로필 파일에 적을 것.
 
 ## 아직 정하지 않은 것
 

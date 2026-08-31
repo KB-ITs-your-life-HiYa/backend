@@ -1,0 +1,27 @@
+# Supabase 접속 설정 템플릿.
+#
+# 【쓰는 법】
+#   cp src/main/resources/application-supabase.properties.example \
+#      src/main/resources/application-supabase.properties
+#   값을 채운 뒤 supabase 프로필로 실행한다.
+#     SPRING_PROFILES_ACTIVE=supabase ./gradlew bootRun
+#
+#   application-supabase.properties 는 .gitignore 에 걸려 있다. 커밋하지 말 것.
+#
+# 【연결 문자열 고르는 법】  Dashboard > Connect > Direct 탭
+#   Direct connection   : 호스트가 db.<ref>.supabase.co — IPv6 전용이라 쓰면 안 된다
+#   Transaction pooler  : 포트 6543 — JPA 의 prepared statement 를 지원하지 않는다
+#   Session pooler      : 포트 5432, 호스트에 pooler 포함  ← 이걸 쓴다
+#
+#   사용자명이 postgres.<프로젝트ref> 형태여야 풀러다. 그냥 postgres 면 Direct 다.
+
+spring.datasource.url=jdbc:postgresql://aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres
+spring.datasource.username=postgres.<프로젝트ref>
+spring.datasource.password=
+
+# 비밀번호는 percent-encoding 하지 않는다. 대시보드에서 만든 원본 그대로 넣는다.
+
+# Supabase 의 public 스키마에는 프로젝트 생성 시 만들어진 객체가 있어서
+# (automatic RLS 옵션의 rls_auto_enable 함수) Flyway 가 "비어 있지 않은 스키마" 로 판단해
+# 기동을 거부한다. 히스토리 테이블을 만들면서 시작하도록 baseline 을 켠다.
+spring.flyway.baseline-on-migrate=true

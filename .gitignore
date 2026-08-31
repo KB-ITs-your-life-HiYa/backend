@@ -39,6 +39,7 @@ out/
 ### 프로젝트 규칙 ###
 # 실제 비밀값 (Supabase URL/키, Gemini 키, 마이홈포털 서비스키)
 src/main/resources/application-secret.properties
+src/main/resources/application-supabase.properties
 .env
 
 ### macOS ###

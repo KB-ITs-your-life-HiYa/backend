@@ -6,7 +6,7 @@
 #   docker compose down    # 정지 (데이터 유지)
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: fledge-postgres
     ports:
       - "5432:5432"

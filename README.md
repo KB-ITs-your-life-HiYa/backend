@@ -8,7 +8,7 @@ KB IT's Your Life 해커톤 · 본선 2026.09.10~12
 | 구분 | 기술 |
 | --- | --- |
 | 언어 · 런타임 | Java 21 (LTS) |
-| 프레임워크 | Spring Boot 4.1.1 (Web MVC, Data JPA, Validation, Actuator) |
+| 프레임워크 | Spring Boot 3.5.16 (Web MVC, Data JPA, Validation, Actuator) |
 | 빌드 | Gradle 9.7.1 (wrapper) |
 | DB | PostgreSQL 16 — 로컬은 Docker, 운영은 Supabase |
 | 외부 API | Gemini, 국토교통부 마이홈포털 |

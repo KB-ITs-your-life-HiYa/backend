@@ -1,0 +1,22 @@
+-- 로컬 개발용 테스트 데이터.
+--
+-- 팀원 전원이 같은 계정·같은 초기 데이터로 개발하기 위한 파일이다.
+-- "테스트유저A 로 눌러보세요" 가 통하려면 여기 내용이 같아야 한다.
+--
+-- 【규칙】
+--   1. 이 파일은 로컬 프로필에만 적용된다. Supabase 에는 들어가지 않는다.
+--      (application-local.properties 의 spring.flyway.locations 참고)
+--   2. R__ 로 시작하는 파일은 내용이 바뀌면 자동으로 다시 적용된다.
+--      따라서 여러 번 실행돼도 결과가 같아야 한다.
+--      INSERT 앞에 DELETE 를 두거나 ON CONFLICT DO NOTHING 을 쓴다.
+--   3. 마이그레이션(db/migration)이 전부 적용된 뒤에 실행된다.
+--      여기서 테이블을 만들지 않는다. 데이터만 넣는다.
+--
+-- 【예시】
+--   DELETE FROM member;
+--   INSERT INTO member (id, nickname, protection_end_date) VALUES
+--       (1, '테스트유저A', '2026-03-01'),   -- 자립 6개월차
+--       (2, '테스트유저B', '2021-09-01');   -- D-day 임박
+--   SELECT setval('member_id_seq', 1000);
+--
+-- 테이블 설계가 끝나면 여기를 채운다.

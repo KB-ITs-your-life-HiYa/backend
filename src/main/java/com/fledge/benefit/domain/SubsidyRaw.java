@@ -29,5 +29,17 @@ public class SubsidyRaw {
 
     private LocalDateTime fetchedAt;
 
+    public SubsidyRaw(String source, String externalId, String rawPayload, LocalDateTime fetchedAt) {
+        this.source = source;
+        this.externalId = externalId;
+        this.rawPayload = rawPayload;
+        this.fetchedAt = fetchedAt;
+    }
+
     protected SubsidyRaw() {}  // JPA가 요구하는 기본 생성자
+
+    public Long getId() { return id; }
+    public String getSource() { return source; }
+    public String getExternalId() { return externalId; }
+    public String getRawPayload() { return rawPayload; }
 }

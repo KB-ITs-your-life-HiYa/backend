@@ -23,5 +23,11 @@ public class SubsidyRegion {
     private String sidoCode;
     private String sigunguCode;
 
+    public SubsidyRegion(Subsidy subsidy, String sidoCode, String sigunguCode) {
+        this.subsidy = subsidy;
+        this.sidoCode = sidoCode;
+        this.sigunguCode = sigunguCode;
+    }
+
     protected SubsidyRegion() {}
 }

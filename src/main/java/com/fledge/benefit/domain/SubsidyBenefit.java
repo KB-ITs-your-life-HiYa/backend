@@ -24,5 +24,12 @@ public class SubsidyBenefit {
     private Long amountKrw;
     private String cycle;
 
+    public SubsidyBenefit(Subsidy subsidy, String benefitName, Long amountKrw, String cycle) {
+        this.subsidy = subsidy;
+        this.benefitName = benefitName;
+        this.amountKrw = amountKrw;
+        this.cycle = cycle;
+    }
+
     protected SubsidyBenefit() {}
 }

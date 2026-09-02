@@ -69,4 +69,33 @@ public class Subsidy {
     private LocalDateTime createdAt;
 
     protected Subsidy() {}
+
+    //꼭 필요한 4개(source, externalId, rawId, name)만 생성자로 받고 나머지는 setter로 채우는 방식
+    public Subsidy(String source, String externalId, Long rawId, String name) {
+        this.source = source;
+        this.externalId = externalId;
+        this.rawId = rawId;
+        this.name = name;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Long getId() { return id; }
+
+    public void setSummary(String summary) { this.summary = summary; }
+    public void setOrgName(String orgName) { this.orgName = orgName; }
+    public void setCategory(String category) { this.category = category; }
+    public void setTargetRaw(String targetRaw) { this.targetRaw = targetRaw; }
+    public void setBenefitRaw(String benefitRaw) { this.benefitRaw = benefitRaw; }
+    public void setApplyMethod(String applyMethod) { this.applyMethod = applyMethod; }
+    public void setApplyDeadlineRaw(String applyDeadlineRaw) { this.applyDeadlineRaw = applyDeadlineRaw; }
+    public void setDetailUrl(String detailUrl) { this.detailUrl = detailUrl; }
+    public void setMinAge(Integer minAge) { this.minAge = minAge; }
+    public void setMaxAge(Integer maxAge) { this.maxAge = maxAge; }
+    public void setIncomePctMax(Integer incomePctMax) { this.incomePctMax = incomePctMax; }
+    public void setIncomeAmtMin(Long incomeAmtMin) { this.incomeAmtMin = incomeAmtMin; }
+    public void setIncomeAmtMax(Long incomeAmtMax) { this.incomeAmtMax = incomeAmtMax; }
+    public void setProtectionStatusRequired(String v) { this.protectionStatusRequired = v; }
+    public void setMinYearsAfterEnd(BigDecimal v) { this.minYearsAfterEnd = v; }
+    public void setMaxYearsAfterEnd(BigDecimal v) { this.maxYearsAfterEnd = v; }
+    public void setTargetHousehold(List<String> v) { this.targetHousehold = v; }
 }

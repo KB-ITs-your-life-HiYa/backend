@@ -40,7 +40,7 @@ CREATE TABLE money_schedule (
     member_id       BIGINT       NOT NULL REFERENCES member (id) ON DELETE CASCADE,
 
     direction       VARCHAR(3)   NOT NULL,   -- OUT 나감 / IN 들어옴
-    type            VARCHAR(20)  NOT NULL,
+    type            VARCHAR(20)  NOT NULL,   -- OUT: SAVINGS·RENT·TELECOM·UTILITY / IN: SALARY·PART_TIME·OTHER_REGULAR
     name            VARCHAR(100) NOT NULL,   -- 표시용 이름
     expected_amount BIGINT,                  -- 소득은 변동할 수 있어 NULL 허용
     expected_day    SMALLINT     NOT NULL,   -- 매월 예정일
@@ -56,7 +56,7 @@ CREATE TABLE money_schedule (
         CHECK (expected_day BETWEEN 1 AND 31),
     -- 방향과 종류가 맞아야 한다. IN 인데 RENT 같은 조합을 막는다.
     CONSTRAINT ck_money_schedule_direction_type
-        CHECK ((direction = 'OUT' AND type IN ('SAVING', 'RENT', 'TELECOM', 'UTILITY'))
+        CHECK ((direction = 'OUT' AND type IN ('SAVINGS', 'RENT', 'TELECOM', 'UTILITY'))
             OR (direction = 'IN'  AND type IN ('SALARY', 'PART_TIME', 'OTHER_REGULAR'))),
     -- 나갈 돈은 금액을 알아야 미납을 판정할 수 있다.
     CONSTRAINT ck_money_schedule_out_amount_required

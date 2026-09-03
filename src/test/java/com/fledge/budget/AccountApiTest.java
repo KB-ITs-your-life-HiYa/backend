@@ -82,11 +82,11 @@ class AccountApiTest {
     }
 
     @Test
-    void 다른_회원의_계좌는_보이지_않는다() throws Exception {
+    void 로그인한_회원의_계좌만_합산한다() throws Exception {
         mvc.perform(get(SUMMARY).header("Authorization", "Bearer " + loginAndGetToken("demo2@fledge.dev")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.depositTotal").value(0))
-                .andExpect(jsonPath("$.data.savingsTotal").value(0))
-                .andExpect(jsonPath("$.data.netAsset").value(0));
+                .andExpect(jsonPath("$.data.depositTotal").value(3056400))
+                .andExpect(jsonPath("$.data.savingsTotal").value(3580000))
+                .andExpect(jsonPath("$.data.netAsset").value(6636400));
     }
 }

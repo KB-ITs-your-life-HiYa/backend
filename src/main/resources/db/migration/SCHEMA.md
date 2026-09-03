@@ -167,9 +167,6 @@ FK 컬럼 중 상당수는 `UNIQUE` 제약이 앞자리를 덮고 있어 별도 
 member_survey.employment_status
   EMPLOYED 재직중 · SEEKING 구직중 · STUDENT 학생 · UNEMPLOYED 무직 · SELF_EMPLOYED 자영업
 
-member_survey.employment_type      ← 문서에 값 목록이 없어 새로 정함
-  FULL_TIME 정규직 · CONTRACT 계약직 · PART_TIME 아르바이트 · DAILY 일용직
-
 member_survey.housing_type
   OWNED 자가 · JEONSE 전세 · MONTHLY_RENT 월세 · FREE 무상거주
   SELF_RELIANCE_HOUSE 자립생활관 · PUBLIC_RENTAL 공공임대

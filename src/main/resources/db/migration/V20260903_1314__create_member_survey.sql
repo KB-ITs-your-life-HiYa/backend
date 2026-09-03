@@ -18,7 +18,6 @@ CREATE TABLE member_survey (
     income_pct_bracket   INT,                        -- 기준중위소득 구간
     is_benefit_recipient BOOLEAN,                    -- 수급자 여부. 영구임대·매입임대 1순위 판정
     employment_status    VARCHAR(20),
-    employment_type      VARCHAR(20),                -- 재직중일 때만 채운다
     housing_type         VARCHAR(20),
 
     updated_at           TIMESTAMPTZ  NOT NULL DEFAULT now(),
@@ -31,16 +30,10 @@ CREATE TABLE member_survey (
     CONSTRAINT ck_member_survey_employment_status
         CHECK (employment_status IS NULL
                OR employment_status IN ('EMPLOYED', 'SEEKING', 'STUDENT', 'UNEMPLOYED', 'SELF_EMPLOYED')),
-    CONSTRAINT ck_member_survey_employment_type
-        CHECK (employment_type IS NULL
-               OR employment_type IN ('FULL_TIME', 'CONTRACT', 'PART_TIME', 'DAILY')),
     CONSTRAINT ck_member_survey_housing_type
         CHECK (housing_type IS NULL
                OR housing_type IN ('OWNED', 'JEONSE', 'MONTHLY_RENT', 'FREE',
-                                   'SELF_RELIANCE_HOUSE', 'PUBLIC_RENTAL')),
-    -- 재직 상태가 아니면 고용형태를 채울 수 없다.
-    CONSTRAINT ck_member_survey_employment_type_requires_employed
-        CHECK (employment_type IS NULL OR employment_status = 'EMPLOYED')
+                                   'SELF_RELIANCE_HOUSE', 'PUBLIC_RENTAL'))
 );
 
 COMMENT ON TABLE  member_survey IS '정책 매칭 설문. 주거 자격 판정도 이 값을 읽는다';

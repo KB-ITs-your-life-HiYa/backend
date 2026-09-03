@@ -50,7 +50,13 @@ public class SubsidyParsingRunner implements CommandLineRunner {
                   "protectionStatusRequired": {"type": "string", "nullable": true},
                   "minYearsAfterEnd": {"type": "number", "nullable": true},
                   "maxYearsAfterEnd": {"type": "number", "nullable": true},
-                  "targetHousehold": {"type": "array", "items": {"type": "string"}},
+                  "targetHousehold": {
+                    "type": "array", 
+                    "items": {
+                        "type": "string",
+                        "enum": ["SINGLE_PARENT", "MULTICULTURAL", "DISABILITY", "MULTI_CHILD", "SEVERE_ILLNESS", "NORTH_KOREAN_DEFECTOR", "GRANDPARENT_FAMILY"]
+                    }
+                  },
                   "benefits": {
                     "type": "array",
                     "items": {
@@ -99,7 +105,10 @@ public class SubsidyParsingRunner implements CommandLineRunner {
             - incomeAmtMin / incomeAmtMax: 소득 조건이 절대금액(원)으로 명시된 경우 (없으면 null)
             - protectionStatusRequired: "보호종료" 또는 "보호중" 조건이 명시돼 있으면, 없으면 null
             - minYearsAfterEnd / maxYearsAfterEnd: "보호종료 후 N년 이내" 같은 조건의 N (없으면 null)
-            - targetHousehold: ["한부모","다문화","장애인"] 등 해당하는 것만 배열로, 없으면 빈 배열
+            - targetHousehold: 다음 중 해당하는 것만 배열로: SINGLE_PARENT(한부모), MULTICULTURAL(다문화),
+              DISABILITY(장애인), SEVERE_ILLNESS(중증질환), NORTH_KOREAN_DEFECTOR(북한이탈주민),
+              GRANDPARENT_FAMILY(조손가정), MULTI_CHILD(다자녀). 소득 수준이나 "자립준비청년" 자체는
+              여기 넣지 마 (다른 필드/전제 조건에서 이미 다뤄짐). 해당 없으면 빈 배열.
             - benefits: 지원내용에 금액이 여러 항목으로 나뉘어 있으면 각각 {benefitName, amountKrw(원 단위 숫자), cycle(월지급/일시금/분할지급/연지급 중 하나)}로 분리. 금액 정보가 없으면 빈 배열.
             - regions: 특정 지역 대상이면 {sidoCode, sigunguCode} 형태로. 전국 대상이면 빈 배열.
 

@@ -15,10 +15,13 @@ public class GeminiClient {
 
     private static final String BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
-    @Value("${gemini.api-key}")
+    // 기본값을 두는 이유: 이 빈은 조건 없이 항상 생성된다.
+    // 값이 없으면 키를 갖지 않은 팀원은 앱 자체를 기동할 수 없다.
+    // 실제 호출은 수집 프로필(ingest/parse)에서만 일어난다.
+    @Value("${gemini.api-key:}")
     private String apiKey;
 
-    @Value("${gemini.model}")
+    @Value("${gemini.model:gemini-2.5-flash}")
     private String model;
 
     private final RestClient restClient = RestClient.create(BASE_URL);

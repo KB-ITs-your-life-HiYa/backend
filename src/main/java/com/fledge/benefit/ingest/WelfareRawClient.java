@@ -24,7 +24,10 @@ public class WelfareRawClient {
 
     private static final String BASE_URL = "https://apis.data.go.kr/B554287/NationalWelfareInformationsV001";
 
-    @Value("${welfare.service-key}")
+    // 기본값을 두는 이유: 이 빈은 조건 없이 항상 생성된다.
+    // 값이 없으면 키를 갖지 않은 팀원은 앱 자체를 기동할 수 없다.
+    // 실제 호출은 수집 프로필(ingest/parse)에서만 일어난다.
+    @Value("${welfare.service-key:}")
     private String serviceKey;
 
     private final RestClient restClient = RestClient.create(BASE_URL);

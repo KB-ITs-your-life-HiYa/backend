@@ -38,7 +38,10 @@ public class SubsidyParsingRunner implements CommandLineRunner {
                   "name": {"type": "string"},
                   "summary": {"type": "string"},
                   "orgName": {"type": "string"},
-                  "category": {"type": "string"},
+                  "category": {
+                    "type": "string",
+                    "enum": ["생활안정", "주거자립", "교육", "취업", "금융", "보건의료", "보호돌봄"]
+                  },
                   "applyMethod": {"type": "string"},
                   "applyDeadlineRaw": {"type": "string"},
                   "detailUrl": {"type": "string"},
@@ -81,7 +84,7 @@ public class SubsidyParsingRunner implements CommandLineRunner {
                     }
                   }
                 },
-                "required": ["rawId", "name"]
+                "required": ["rawId", "name", "category"]
               }
             }
             """.formatted(count, count);
@@ -96,7 +99,11 @@ public class SubsidyParsingRunner implements CommandLineRunner {
             - name: 지원금명
             - summary: 한두 문장 요약
             - orgName: 소관/운영 기관명
-            - category: 지원 분야 (예: 주거, 생활지원, 취업, 금융 등)
+            - category: 다음 7개 중 가장 알맞은 것 하나를 반드시 골라 (생략 불가): 생활안정(생계비/자립수당/
+              정착금 등 현금성 생활지원), 주거자립(임대주택/주거비 등), 교육(장학금/등록금/학원비),
+              취업(취업지원/직업훈련), 금융(대출/저축/금융교육), 보건의료(의료비/건강 지원),
+              보호돌봄(상담/돌봄/보호 서비스). 원문에 분류 관련 필드(mclsfNm, lclsfNm, 서비스분야 등)가
+              있으면 최우선으로 참고해.
             - applyMethod: 신청방법
             - applyDeadlineRaw: 신청기한 원문 텍스트
             - detailUrl: 상세페이지 링크 (있으면)

@@ -22,6 +22,7 @@ src/main/java/com/fledge/
 ├── common/         ApiResponse, ErrorCode
 ├── config/         WebConfig, OpenApiConfig, SecurityConfig
 ├── exception/      ApiException, GlobalExceptionHandler
+├── security/       JWT 발급·검증, 인증 필터
 └── <도메인>/
     ├── controller/
     ├── service/
@@ -30,8 +31,12 @@ src/main/java/com/fledge/
     └── domain/       JPA 엔티티
 
 src/main/resources/
-└── db/migration/   Flyway 마이그레이션
+├── db/migration/   Flyway 마이그레이션
+└── db/seed/        개발용 시드 (R__)
 ```
+
+`security/` 가 도메인 밖에 있는 이유는, 특정 도메인의 기능이 아니라
+**모든 요청이 거쳐 가는 공통 장치**이기 때문이다. 회원을 다루지만 `member/` 아래가 아니다.
 
 **도메인 우선 구조다.** 계층(`controller/`)이 아니라 도메인(`housing/`)이 먼저 온다.
 기능 하나를 고칠 때 폴더 하나만 보면 되고, 담당 경계가 폴더로 드러나 머지 충돌이 줄어든다.
@@ -206,10 +211,56 @@ Direct는 IPv6 전용, Transaction pooler(6543)는 JPA의 prepared statement를 
 
 ## 인증
 
-> **미정.** 팀 논의 후 확정한다. 확정 전까지 인증이 필요한 엔드포인트는 만들지 않는다.
->
-> - **A안** Supabase Auth 발급 + Spring Security Resource Server 검증 (JWKS · ES256)
-> - **B안** 백엔드 자체 JWT 발급 + Spring Security 전체 구성
+**백엔드가 직접 JWT를 발급한다.** Spring Security + JJWT.
+
+```
+로그인          POST /api/v1/auth/login   → { token, member }
+이후 모든 요청   Authorization: Bearer <token>
+```
+
+- 토큰에는 **회원 id와 시각만** 담는다. 이메일·등급은 담지 않는다 —
+  값이 바뀌어도 토큰은 그대로라 낡은 정보를 들고 다니게 된다. id로 DB에서 읽는다
+- 유효기간 **7일**, **리프레시 토큰 없음.** 만료되면 다시 로그인한다
+- 비밀번호는 BCrypt 해시로만 저장한다. 평문을 저장하거나 로그에 남기지 않는다
+
+### 컨트롤러에서 로그인한 회원 꺼내기
+
+**경로에 회원 id를 넣지 않는다.** 토큰에서 꺼낸다.
+
+```java
+@GetMapping("/me")
+public ApiResponse<MemberResponse> me(@AuthenticationPrincipal AuthenticatedMember me) {
+    return ApiResponse.ok(memberService.findMe(me.id()));
+}
+```
+
+`/members/{id}` 로 만들면 남의 id를 넣어 조회할 수 있다(IDOR).
+불가피하게 경로에 `{id}`가 있어야 하면, 조회 쿼리에 소유 조건을 넣어 "내 것 중에서" 찾는다.
+
+### 공개 경로 추가
+
+로그인 없이 접근해야 하는 경로는 `SecurityConfig`의 `PUBLIC` 배열에 추가한다.
+**여기에는 `/api/v1`을 직접 쓴다.** `WebConfig`의 prefix는 컨트롤러 매핑에만 적용되고,
+시큐리티 필터는 그보다 앞에서 실제 URL로 판단하기 때문이다.
+
+기본은 **인증 필요**다(`anyRequest().authenticated()`). 공개가 예외다.
+
+### Swagger에서 테스트하기
+
+`/swagger-ui.html` → **Authorize** → 로그인으로 받은 `token` 값만 붙여넣기.
+`Bearer`는 자동으로 붙으므로 직접 쓰지 않는다.
+
+개발용 계정 (비밀번호 모두 `demo1234`)
+
+| 계정 | 상태 |
+| --- | --- |
+| `demo1@fledge.dev` | 보호종료 550일차 · D-1275 |
+| `demo2@fledge.dev` | 보호종료 1645일차 · **D-180** (데모용) |
+
+### 설정
+
+`jwt.secret`은 환경변수 `JWT_SECRET`으로 덮어쓸 수 있고, 없으면 개발용 기본값을 쓴다.
+**최소 32바이트**여야 한다. 짧으면 기동 시 예외가 난다.
 
 ---
 
@@ -261,4 +312,4 @@ git switch -c feature/housing-calendar
 
 ---
 
-_최종 갱신: 2026-08-31_
+_최종 갱신: 2026-09-02_

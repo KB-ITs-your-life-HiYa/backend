@@ -42,3 +42,29 @@ Flyway 는 적용할 때 파일 내용의 체크섬을 저장해두기 때문에
 ```sql
 SELECT version, description, success, installed_on FROM flyway_schema_history ORDER BY installed_rank;
 ```
+
+## MySQL 과 다른 점
+
+MySQL 만 써보셨다면 이 정도만 알면 된다.
+JPA 를 쓰므로 엔티티·리포지토리·서비스 코드는 DB 와 무관하게 동일하다.
+차이를 느끼는 건 **여기 SQL 파일을 쓸 때뿐**이다.
+
+| | MySQL | PostgreSQL |
+| --- | --- | --- |
+| 자동증가 PK | `BIGINT AUTO_INCREMENT` | `BIGSERIAL` |
+| 참/거짓 | `TINYINT(1)` | `BOOLEAN` (진짜 불리언) |
+| 시각 | `DATETIME` | `TIMESTAMPTZ` (시간대 포함) |
+| 현재시각 기본값 | `DEFAULT CURRENT_TIMESTAMP` | `DEFAULT now()` |
+| 이름 감싸기 | `` `backtick` `` | `"큰따옴표"` |
+| 문자열 잇기 | `CONCAT(a, b)` | `a \|\| b` |
+| 상위 N건 | `LIMIT 10` | 같음 |
+
+`VARCHAR`, `INT`, `DATE`, `ALTER TABLE ... ADD COLUMN` 등은 양쪽이 같다.
+실제로 앞으로 쓸 일이 많은 것은 대부분 같은 문법이다.
+
+DB 내용을 볼 때는 IntelliJ 우측 **Database** 탭을 쓰면 MySQL 과 화면이 같다.
+
+## 설계 근거
+
+왜 그렇게 만들었는지는 [SCHEMA.md](./SCHEMA.md) 에 있다.
+"이 제약은 왜 있지" 싶으면 거기를 먼저 본다.

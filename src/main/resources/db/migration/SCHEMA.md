@@ -167,6 +167,14 @@ FK 컬럼 중 상당수는 `UNIQUE` 제약이 앞자리를 덮고 있어 별도 
 member_survey.employment_status
   EMPLOYED 재직중 · SEEKING 구직중 · STUDENT 학생 · UNEMPLOYED 무직 · SELF_EMPLOYED 자영업
 
+member_survey_tag.tag                     ← subsidy 대상 조건과 같은 어휘를 쓴다
+  SINGLE_PARENT 한부모 · MULTICULTURAL 다문화 · DISABILITY 장애 · MULTI_CHILD 다자녀
+  SEVERE_ILLNESS 중증질환 · NORTH_KOREAN_DEFECTOR 북한이탈 · GRANDPARENT_FAMILY 조손
+
+member_survey.income_pct_bracket
+  32 · 48 · 50 · 60 · 100 · 120 · 150 · 999(150% 초과)
+  ※ 모르면 NULL. "소득이 많아 대상 아님(999)" 과 "아직 모름(NULL)" 은 구분한다
+
 member_survey.housing_type
   OWNED 자가 · JEONSE 전세 · MONTHLY_RENT 월세 · FREE 무상거주
   SELF_RELIANCE_HOUSE 자립생활관 · PUBLIC_RENTAL 공공임대

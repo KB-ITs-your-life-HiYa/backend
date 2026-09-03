@@ -56,7 +56,7 @@ CREATE TABLE transaction (
     CONSTRAINT ck_transaction_category
         CHECK (category IS NULL
                OR category IN ('HOUSING_UTILITY', 'FOOD', 'TRANSPORT',
-                               'LIVING_MEDICAL', 'LEISURE_SHOPPING', 'ETC')),
+                               'LIVING_MEDICAL', 'LEISURE_SHOPPING', 'SAVINGS', 'ETC')),
 
     -- account_id 만 참조하면 member_id 를 아무 값이나 넣어도 통과한다.
     -- 남의 계좌 거래가 내 지출 합계에 섞이게 되므로, 두 컬럼을 묶어서 참조한다.

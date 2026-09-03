@@ -176,5 +176,8 @@ member_survey.housing_type
 
 transaction.category
   HOUSING_UTILITY 주거공과금 · FOOD 식비 · TRANSPORT 교통
-  LIVING_MEDICAL 생활의료 · LEISURE_SHOPPING 여가쇼핑 · ETC 기타
+  LIVING_MEDICAL 생활의료 · LEISURE_SHOPPING 여가쇼핑 · SAVINGS 저축 · ETC 기타
+
+  ※ money_schedule.type 의 저축은 'SAVING'(단수), 여기와 account_type 은 'SAVINGS'(복수)다.
+    표기가 갈리므로 값을 쓸 때 어느 테이블인지 확인할 것.
 ```

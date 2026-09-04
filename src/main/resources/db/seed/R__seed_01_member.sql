@@ -24,9 +24,12 @@
 
 DELETE FROM member;
 
+-- region_sigungu_code 는 sigungu 테이블의 코드다. 이름으로 직접 안 쓰는 이유는
+-- '중구'처럼 여러 시/도에 중복되는 이름이 있어서다(#19).
+--   41115 = 경기도 수원시팔달구,  28177 = 인천광역시 미추홀구
 INSERT INTO member (
     id, email, password_hash, birth_date, gender,
-    region_code, region_sigungu,
+    region_code, region_sigungu_code,
     protection_status, protection_end_date, protection_type, home_region_code,
     created_at
 ) VALUES
@@ -34,7 +37,7 @@ INSERT INTO member (
 --   보호종료 550일 경과 → D-1825 까지 1275일 남음
 (1, 'demo1@fledge.dev', '$2a$10$4hz9VjP/e3kYPu9PFnSwr.chUFEJ6lF/oJeg.nASGLQxbiqYEAMD6',
  CURRENT_DATE - INTERVAL '20 years', 'FEMALE',
- '41', '수원시 팔달구',
+ '41', '41115',
  'ENDED', CURRENT_DATE - 550, 'FACILITY', '41',
  now() - INTERVAL '4 months'),
 
@@ -49,7 +52,7 @@ INSERT INTO member (
 --   지금은 인천(28)에 살아서, 정착금은 경기 기준 / 임대주택 공고는 인천 기준으로 갈린다.
 (2, 'demo2@fledge.dev', '$2a$10$4hz9VjP/e3kYPu9PFnSwr.chUFEJ6lF/oJeg.nASGLQxbiqYEAMD6',
  CURRENT_DATE - INTERVAL '22 years', 'MALE',
- '28', '미추홀구',
+ '28', '28177',
  'ENDED', CURRENT_DATE - 1645, 'FOSTER_CARE', '41',
  now() - INTERVAL '1 year');
 

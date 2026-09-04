@@ -4,13 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 @Component
+@Slf4j
 public class GeminiClient {
 
     private static final String BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
@@ -21,13 +25,20 @@ public class GeminiClient {
     @Value("${gemini.api-key:}")
     private String apiKey;
 
-    @Value("${gemini.model:gemini-2.5-flash}")
+    @Value("${gemini.model:gemini-3.1-flash-lite}")
     private String model;
 
-    private final RestClient restClient = RestClient.create(BASE_URL);
+    private final RestClient restClient = createClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public String generateJson(String prompt, String responseSchemaJson) throws Exception {
+        return generateJson(prompt, responseSchemaJson, 32768);
+    }
+
+    public String generateJson(String prompt, String responseSchemaJson, int maxOutputTokens) throws Exception {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("Gemini API key is not configured");
+        }
         JsonNode schema = objectMapper.readTree(responseSchemaJson);
 
         Map<String, Object> requestBody = Map.of(
@@ -38,7 +49,7 @@ public class GeminiClient {
                         "responseMimeType", "application/json",
                         "responseSchema", schema,
                         "temperature", 0,
-                        "maxOutputTokens", 32768
+                        "maxOutputTokens", maxOutputTokens
                 )
         );
 
@@ -50,12 +61,23 @@ public class GeminiClient {
                 .retrieve()
                 .body(JsonNode.class);
 
-        JsonNode candidate = response.get("candidates").get(0);
-        String finishReason = candidate.get("finishReason").asText();
+        if (response == null || !response.path("candidates").isArray() || response.path("candidates").isEmpty())
+            throw new IllegalStateException("Gemini response has no candidates");
+        JsonNode candidate = response.path("candidates").get(0);
+        String finishReason = candidate.path("finishReason").asText();
         if (!"STOP".equals(finishReason)) {
-            System.out.println("경고: finishReason = " + finishReason + " (STOP이 아니면 응답이 잘렸을 수 있음)");
+            log.warn("Gemini 응답이 정상 종료되지 않음: finishReason={}", finishReason);
         }
+        JsonNode text = candidate.path("content").path("parts").path(0).path("text");
+        if (!text.isTextual() || text.asText().isBlank())
+            throw new IllegalStateException("Gemini response has no text");
+        return text.asText();
+    }
 
-        return response.get("candidates").get(0).get("content").get("parts").get(0).get("text").asText();
+    private static RestClient createClient() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(30));
+        return RestClient.builder().baseUrl(BASE_URL).requestFactory(factory).build();
     }
 }

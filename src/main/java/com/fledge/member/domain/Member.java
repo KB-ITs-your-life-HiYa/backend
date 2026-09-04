@@ -36,8 +36,9 @@ public class Member {
     @Column(name = "region_code")
     private String regionCode;
 
-    @Column(name = "region_sigungu")
-    private String regionSigungu;
+    // 이름 텍스트 대신 sigungu 코드로 저장한다. subsidy_region.sigungu_code 와 조인하기 위함이다.
+    @Column(name = "region_sigungu_code")
+    private String regionSigunguCode;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "protection_status")

@@ -10,6 +10,8 @@ public final class CareDto {
     public enum Choice { ALREADY_DONE, DIFFICULT, CHANGED, LATER }
     public record ButtonRequest(@NotNull Choice choice, @NotBlank @Size(max = 80) String requestId,
                                 @Min(1) @Max(31) Integer expectedDay, @Positive Long expectedAmount) {}
+    public record FreeTextRequest(@NotBlank @Size(max = 1000) String input,
+                                  @NotBlank @Size(max = 80) String requestId) {}
     public record DemoDateRequest(@NotNull LocalDate date) {}
     public record Option(Choice value, String label) {}
     public record PolicyCard(String id, String category, String name, String support,
@@ -19,8 +21,8 @@ public final class CareDto {
                                 String regionCode, boolean ready) {}
     public record ReferralConsent(@NotNull @AssertTrue Boolean consent) {}
     public record Referral(Long id, String status, String reason, OffsetDateTime requestedAt) {}
-    public record Reply(Long id, String choice, String userText, String reply, OffsetDateTime createdAt,
-                        Policies policies) {}
+    public record Reply(Long id, String inputType, String choice, String userText, String reply,
+                        String requestId, String aiStatus, OffsetDateTime createdAt, Policies policies) {}
     public record Cycle(Long id, Long scheduleId, String name, String type, LocalDate expectedDate,
                         Long expectedAmount, String status, LocalDate actualDate, Long actualAmount) {}
     public record Reminder(Long cycleId, String message) {}

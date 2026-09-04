@@ -15,7 +15,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
-
+  
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다"),
     FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다"),
@@ -23,6 +23,15 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 요청 방식입니다"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 문제가 발생했습니다"),
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다"),
+
+
+   // habit — 놀이 탭
+    HABIT_QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "오늘의 퀴즈를 찾을 수 없습니다"),
+    HABIT_QUIZ_ALREADY_ANSWERED(HttpStatus.CONFLICT, "오늘의 퀴즈는 이미 풀었습니다"),
+    HABIT_QUIZ_OPTION_INVALID(HttpStatus.BAD_REQUEST, "선택한 보기가 올바르지 않습니다"),
+    HABIT_TOPIC_NOT_FOUND(HttpStatus.NOT_FOUND, "토픽을 찾을 수 없습니다"),
+    HABIT_PUZZLE_SET_NOT_FOUND(HttpStatus.NOT_FOUND, "퍼즐 세트를 찾을 수 없습니다"),
+  
     CARE_SIGNAL_NOT_FOUND(HttpStatus.NOT_FOUND, "상담을 찾을 수 없습니다"),
     CARE_SIGNAL_RESOLVED(HttpStatus.CONFLICT, "이미 해결된 상담입니다. 새로고침해 주세요"),
     CARE_INVALID_CHANGE(HttpStatus.BAD_REQUEST, "날짜는 1~31일, 금액은 1원 이상으로 입력하고 변경할 항목을 선택해 주세요"),

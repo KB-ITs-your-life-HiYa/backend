@@ -100,4 +100,11 @@ class AuthApiTest {
         mvc.perform(get(ME).header("Authorization", "Bearer " + loginAndGetToken("demo2@fledge.dev")))
                 .andExpect(jsonPath("$.data.memberId").value(2));
     }
+
+    @Test
+    void 보호종료일과_거주지역_코드가_내려온다() throws Exception {
+        mvc.perform(get(ME).header("Authorization", "Bearer " + loginAndGetToken("demo1@fledge.dev")))
+                .andExpect(jsonPath("$.data.protectionEndDate").isNotEmpty())
+                .andExpect(jsonPath("$.data.homeRegionCode").value("41"));
+    }
 }

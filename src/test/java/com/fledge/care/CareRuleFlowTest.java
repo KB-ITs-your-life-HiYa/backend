@@ -53,6 +53,7 @@ class CareRuleFlowTest {
         jdbc = mock(JdbcTemplate.class);
         Member member = mock(Member.class);
         when(member.getEmail()).thenReturn("demo2@fledge.dev");
+        when(member.getRegionCode()).thenReturn("28");
         when(members.lockForCare(anyLong())).thenReturn(Optional.of(member));
         when(members.findById(2L)).thenReturn(Optional.of(member));
         when(schedules.findByMemberIdAndIsActiveTrueOrderById(anyLong())).thenAnswer(a -> scheduleRows.stream()
@@ -373,6 +374,7 @@ class CareRuleFlowTest {
         care.savePolicies(2L, 1L, 1L, new Policies("ERROR", List.of()));
         assertThat(care.summary(2L).signals().getFirst().replies().getFirst().policies().cards()).containsExactly(card);
         assertThat(care.policyContext(2L, 1L, 1L).ready()).isTrue();
+        assertThat(care.policyContext(2L, 1L, 1L).regionCode()).isEqualTo("28");
         assertThatThrownBy(() -> care.policyContext(1L, 1L, 1L)).isInstanceOf(ApiException.class);
         assertThatThrownBy(() -> care.policyContext(2L, 1L, 999L)).isInstanceOf(ApiException.class);
     }

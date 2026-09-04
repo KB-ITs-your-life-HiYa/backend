@@ -9,6 +9,7 @@ import com.fledge.care.repository.*;
 import com.fledge.common.ErrorCode;
 import com.fledge.exception.ApiException;
 import com.fledge.member.repository.MemberRepository;
+import com.fledge.member.domain.Member;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,8 +41,8 @@ public class CareService {
     private final JdbcTemplate jdbc;
     private final EntityManager entityManager;
 
-    private void lock(Long memberId) {
-        members.lockForCare(memberId).orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
+    private Member lock(Long memberId) {
+        return members.lockForCare(memberId).orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
     }
 
     public Summary summary(Long memberId) {
@@ -174,11 +175,12 @@ public class CareService {
     }
 
     public PolicyContext policyContext(Long memberId, Long signalId, Long responseId) {
-        lock(memberId);
+        Member member = lock(memberId);
         CareSignal signal = signals.findByIdAndMemberId(signalId, memberId)
                 .orElseThrow(() -> new ApiException(ErrorCode.CARE_SIGNAL_NOT_FOUND));
         CareResponse response = policyResponse(signalId, responseId);
         return new PolicyContext(responseId, signal.getSignalType(), time.now(memberId).toLocalDate(),
+                member.getRegionCode(),
                 "READY".equals(response.getPolicyStatus()));
     }
 

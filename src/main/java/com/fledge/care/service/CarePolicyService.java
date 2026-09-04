@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 public class CarePolicyService {
+    private record Candidate(PolicyCard card, boolean national) {}
     private final CareService care;
     private final YouthCenterRawClient youth;
     private final ObjectMapper mapper;
@@ -26,20 +27,22 @@ public class CarePolicyService {
         try {
             boolean employment = "INCOME_MISSING".equals(context.signalType());
             List<String> keywords = employment ? List.of("일경험", "국민취업지원") : List.of("생활비", "햇살론");
-            Map<String, PolicyCard> cards = new LinkedHashMap<>();
+            Map<String, Candidate> cards = new LinkedHashMap<>();
             for (String keyword : keywords) {
                 for (var raw : youth.fetchList(keyword, 1, 100)) {
                     JsonNode item = mapper.readTree(raw.rawPayload());
+                    if (!matchesRegion(item, context.regionCode())) continue;
                     PolicyCard card = toCard(item, employment, context.asOf());
-                    if (card != null) cards.putIfAbsent(card.id(), card);
+                    if (card != null) cards.putIfAbsent(card.id(), new Candidate(card, isNationalRegion(item)));
                 }
             }
             // 같은 API 응답에는 항상 같은 순서. 전국 정책을 먼저 안내하고 원문 기관도 함께 표시한다.
             Set<String> supportSeen = new HashSet<>();
             Set<String> nameSeen = new HashSet<>();
             List<PolicyCard> selected = cards.values().stream()
-                    .sorted(Comparator.comparing((PolicyCard c) -> !isNational(c.organization()))
-                            .thenComparing(PolicyCard::id, Comparator.reverseOrder()))
+                    .sorted(Comparator.comparing((Candidate c) -> !c.national())
+                            .thenComparing(c -> c.card().id(), Comparator.reverseOrder()))
+                    .map(Candidate::card)
                     .filter(c -> nameSeen.add(c.name().replaceAll("\\s+", "")))
                     // 기관별로 중복 등록된 같은 지원 내용을 두 카드로 보여주지 않는다.
                     .filter(c -> c.support().length() < 20 || supportSeen.add(c.support().replaceAll("\\s+", "")))
@@ -67,8 +70,18 @@ public class CarePolicyService {
                 "https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch/ythPlcyDetail/" + id);
     }
 
-    private static boolean isNational(String organization) {
-        return List.of("고용노동부", "보건복지부", "금융위원회", "서민금융진흥원", "교육부").contains(organization);
+    static boolean matchesRegion(JsonNode item, String regionCode) {
+        String zipCodes = text(item, "zipCd");
+        if (zipCodes.isBlank()) return true;
+        if (regionCode == null || !regionCode.matches("[0-9]{2}")) return false;
+        return Arrays.stream(zipCodes.split(","))
+                .map(String::trim)
+                .filter(code -> code.matches("[0-9]{5}"))
+                .anyMatch(code -> code.startsWith(regionCode));
+    }
+
+    private static boolean isNationalRegion(JsonNode item) {
+        return text(item, "zipCd").isBlank();
     }
 
     private static String text(JsonNode item, String field) {

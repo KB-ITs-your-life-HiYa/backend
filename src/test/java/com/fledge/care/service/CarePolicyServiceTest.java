@@ -19,8 +19,13 @@ class CarePolicyServiceTest {
     final LocalDate day = LocalDate.of(2026, 9, 26);
 
     RawSubsidy row(String id, String name, String period) {
+        return row(id, name, period, "");
+    }
+
+    RawSubsidy row(String id, String name, String period, String zipCodes) {
         return new RawSubsidy(id, "{\"plcyNo\":\"" + id + "\",\"plcyNm\":\"" + name
-                + "\",\"plcySprtCn\":\"지원 내용\",\"aplyYmd\":\"" + period + "\",\"sprvsnInstCdNm\":\"고용노동부\"}");
+                + "\",\"plcySprtCn\":\"지원 내용\",\"aplyYmd\":\"" + period
+                + "\",\"zipCd\":\"" + zipCodes + "\",\"sprvsnInstCdNm\":\"고용노동부\"}");
     }
 
     @Test void actualResponseFieldsMapAndExpiredPoliciesAreExcluded() throws Exception {
@@ -34,7 +39,7 @@ class CarePolicyServiceTest {
     }
 
     @Test void employmentUsesFixedKeywordsDeduplicatesAndLimitsTwo() {
-        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "INCOME_MISSING", day, false));
+        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "INCOME_MISSING", day, "28", false));
         var rows = List.of(row("1", "일경험 A", ""), row("2", "일경험 B", ""), row("3", "일경험 C", ""));
         when(youth.fetchList(anyString(), eq(1), eq(100))).thenReturn(rows);
         policies.load(2L, 1L, 1L);
@@ -45,7 +50,7 @@ class CarePolicyServiceTest {
     }
 
     @Test void financeUsesFixedKeywordsAndEmptyResultRemainsRetryable() {
-        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "MISSED_SAVING", day, false));
+        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "MISSED_SAVING", day, "28", false));
         when(youth.fetchList(anyString(), eq(1), eq(100))).thenReturn(List.of());
         policies.load(2L, 1L, 1L);
         verify(youth).fetchList("생활비", 1, 100);
@@ -54,7 +59,7 @@ class CarePolicyServiceTest {
     }
 
     @Test void upstreamErrorIsStoredWithoutLeakingExceptionOrRepeatingCounseling() {
-        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "MISSED_PAYMENT", day, false));
+        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "MISSED_PAYMENT", day, "28", false));
         when(youth.fetchList(anyString(), eq(1), eq(100))).thenThrow(new IllegalStateException("key must not leak"));
         policies.load(2L, 1L, 1L);
         verify(care).savePolicies(2L, 1L, 1L, new Policies("ERROR", List.of()));
@@ -62,7 +67,7 @@ class CarePolicyServiceTest {
     }
 
     @Test void successfulSnapshotSkipsExternalApi() {
-        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "MISSED_SAVING", day, true));
+        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "MISSED_SAVING", day, "28", true));
         policies.load(2L, 1L, 1L);
         verifyNoInteractions(youth);
         verify(care).summary(2L);
@@ -80,7 +85,7 @@ class CarePolicyServiceTest {
         }
     }
     @Test void duplicateSupportRegisteredByDifferentInstitutionsAppearsOnlyOnce() {
-        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "MISSED_SAVING", day, false));
+        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "MISSED_SAVING", day, "28", false));
         String support = "대학생과 청년층의 금융애로를 해소하고 제도권 금융으로 안착하도록 지원";
         var a = row("1", "햇살론유스", "");
         var b = row("2", "청년 햇살론유스 운영", "");
@@ -91,10 +96,36 @@ class CarePolicyServiceTest {
         verify(care).savePolicies(eq(2L), eq(1L), eq(1L), argThat(p -> p.cards().size() == 1));
     }
     @Test void samePolicyNameKeepsLatestEntry() {
-        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "INCOME_MISSING", day, false));
+        when(care.policyContext(2L, 1L, 1L)).thenReturn(new PolicyContext(1L, "INCOME_MISSING", day, "28", false));
         when(youth.fetchList(anyString(), eq(1), eq(100))).thenReturn(List.of(
                 row("2025", "국민취업지원제도", ""), row("2026", "국민취업지원제도", "")));
         policies.load(2L, 1L, 1L);
         verify(care).savePolicies(eq(2L), eq(1L), eq(1L), argThat(p -> p.cards().size() == 1 && p.cards().getFirst().id().equals("2026")));
+    }
+
+    @Test void memberRegionKeepsNationalAndMatchingPoliciesAndExcludesOtherRegions() {
+        when(care.policyContext(2L, 1L, 1L)).thenReturn(
+                new PolicyContext(1L, "INCOME_MISSING", day, "28", false));
+        when(youth.fetchList(anyString(), eq(1), eq(100))).thenReturn(List.of(
+                row("1", "경기 일자리", "", "41111"),
+                row("2", "인천 일자리", "", "28125"),
+                row("3", "복수 지역 일자리", "", " 41111, 28200 "),
+                row("4", "전국 일자리", "", "")));
+
+        policies.load(2L, 1L, 1L);
+
+        verify(care).savePolicies(eq(2L), eq(1L), eq(1L), argThat(p ->
+                p.status().equals("READY")
+                        && p.cards().stream().map(PolicyCard::name).toList()
+                        .equals(List.of("전국 일자리", "복수 지역 일자리"))));
+    }
+
+    @Test void invalidOrMissingMemberRegionDoesNotExposeRegionalPolicy() throws Exception {
+        var regional = mapper.readTree(row("1", "지역 정책", "", "잘못된값, 41111").rawPayload());
+        var national = mapper.readTree(row("2", "전국 정책", "", "").rawPayload());
+
+        assertThat(CarePolicyService.matchesRegion(regional, "28")).isFalse();
+        assertThat(CarePolicyService.matchesRegion(regional, null)).isFalse();
+        assertThat(CarePolicyService.matchesRegion(national, null)).isTrue();
     }
 }

@@ -42,6 +42,8 @@ public enum ErrorCode {
     CARE_REQUEST_CONFLICT(HttpStatus.CONFLICT, "같은 요청 번호로 다른 답변을 보낼 수 없습니다"),
     CARE_GEMINI_RETRY_NOT_ALLOWED(HttpStatus.CONFLICT, "재시도할 수 있는 상담 답변이 아닙니다");
 
+    MEMBER_SURVEY_INVALID(HttpStatus.BAD_REQUEST, "설문 값이 올바르지 않습니다");
+
     private final HttpStatus status;
     private final String message;
 }

@@ -14,6 +14,7 @@ import com.fledge.habit.dto.HabitQuizAnswerResponse;
 import com.fledge.habit.dto.HabitQuizOptionResponse;
 import com.fledge.habit.dto.HabitQuizResultResponse;
 import com.fledge.habit.dto.HabitTodayQuizResponse;
+import com.fledge.habit.dto.HabitTopicCategoryResponse;
 import com.fledge.habit.dto.HabitTopicDetailResponse;
 import com.fledge.habit.dto.HabitTopicSummaryResponse;
 import com.fledge.habit.repository.HabitPuzzleProgressRepository;
@@ -21,6 +22,7 @@ import com.fledge.habit.repository.HabitPuzzleSetRepository;
 import com.fledge.habit.repository.HabitQuizAnswerRepository;
 import com.fledge.habit.repository.HabitQuizOptionRepository;
 import com.fledge.habit.repository.HabitQuizRepository;
+import com.fledge.habit.repository.HabitTopicCategoryRepository;
 import com.fledge.habit.repository.HabitTopicRepository;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -39,9 +41,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class HabitService {
 
-    // TODO: 인증 확정 후 SecurityContext 에서 추출하도록 교체
-    private static final Long CURRENT_MEMBER_ID = 1L;
-
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final HabitQuizRepository quizRepository;
@@ -49,15 +48,16 @@ public class HabitService {
     private final HabitQuizAnswerRepository answerRepository;
     private final HabitPuzzleSetRepository puzzleSetRepository;
     private final HabitPuzzleProgressRepository progressRepository;
+    private final HabitTopicCategoryRepository topicCategoryRepository;
     private final HabitTopicRepository topicRepository;
 
-    public HabitTodayQuizResponse getTodayQuiz() {
+    public HabitTodayQuizResponse getTodayQuiz(Long memberId) {
         HabitQuiz quiz = resolveTodayQuiz();
         List<HabitQuizOptionResponse> options = optionRepository.findByQuizIdOrderBySortOrderAsc(quiz.getId()).stream()
                 .map(o -> new HabitQuizOptionResponse(o.getId(), o.getLabel()))
                 .toList();
 
-        Optional<HabitQuizAnswer> answer = answerRepository.findByMemberIdAndAnsweredDate(CURRENT_MEMBER_ID, LocalDate.now(KST));
+        Optional<HabitQuizAnswer> answer = answerRepository.findByMemberIdAndAnsweredDate(memberId, LocalDate.now(KST));
         HabitQuizResultResponse result = answer
                 .map(a -> new HabitQuizResultResponse(a.getSelectedOptionId(), a.isCorrect(), quiz.getExplanation()))
                 .orElse(null);
@@ -66,9 +66,9 @@ public class HabitService {
     }
 
     @Transactional
-    public HabitQuizAnswerResponse submitTodayAnswer(Long optionId) {
+    public HabitQuizAnswerResponse submitTodayAnswer(Long memberId, Long optionId) {
         LocalDate today = LocalDate.now(KST);
-        if (answerRepository.findByMemberIdAndAnsweredDate(CURRENT_MEMBER_ID, today).isPresent()) {
+        if (answerRepository.findByMemberIdAndAnsweredDate(memberId, today).isPresent()) {
             throw new ApiException(ErrorCode.HABIT_QUIZ_ALREADY_ANSWERED);
         }
 
@@ -80,27 +80,27 @@ public class HabitService {
         }
 
         boolean correct = option.isCorrect();
-        answerRepository.save(new HabitQuizAnswer(CURRENT_MEMBER_ID, quiz.getId(), option.getId(), correct, today));
+        answerRepository.save(new HabitQuizAnswer(memberId, quiz.getId(), option.getId(), correct, today));
 
         boolean justCompleted = false;
         HabitPuzzleProgressResponse progressResponse;
         if (correct) {
-            AwardResult award = awardPiece();
+            AwardResult award = awardPiece(memberId);
             justCompleted = award.justCompleted();
             progressResponse = award.progress();
         } else {
-            progressResponse = getProgress();
+            progressResponse = getProgress(memberId);
         }
 
         return new HabitQuizAnswerResponse(correct, quiz.getExplanation(), progressResponse, justCompleted);
     }
 
-    public HabitPuzzleProgressResponse getProgress() {
+    public HabitPuzzleProgressResponse getProgress(Long memberId) {
         List<HabitPuzzleSet> sets = puzzleSetRepository.findAllByOrderBySortOrderAsc();
         if (sets.isEmpty()) {
             throw new ApiException(ErrorCode.HABIT_PUZZLE_SET_NOT_FOUND);
         }
-        Map<Long, HabitPuzzleProgress> progressBySetId = loadProgressBySetId();
+        Map<Long, HabitPuzzleProgress> progressBySetId = loadProgressBySetId(memberId);
 
         Optional<HabitPuzzleSet> current = findCurrentSet(sets, progressBySetId);
         if (current.isPresent()) {
@@ -115,9 +115,9 @@ public class HabitService {
         return new HabitPuzzleProgressResponse(last.getId(), last.getTitle(), last.getAssetKey(), last.getTotalPieces(), last.getTotalPieces(), true, true);
     }
 
-    public List<HabitPuzzleSetSummaryResponse> listPuzzleSets() {
+    public List<HabitPuzzleSetSummaryResponse> listPuzzleSets(Long memberId) {
         List<HabitPuzzleSet> sets = puzzleSetRepository.findAllByOrderBySortOrderAsc();
-        Map<Long, HabitPuzzleProgress> progressBySetId = loadProgressBySetId();
+        Map<Long, HabitPuzzleProgress> progressBySetId = loadProgressBySetId(memberId);
 
         List<HabitPuzzleSetSummaryResponse> result = new ArrayList<>();
         boolean reachedCurrent = false;
@@ -143,8 +143,14 @@ public class HabitService {
         return result;
     }
 
-    public List<HabitTopicSummaryResponse> listTopics() {
-        return topicRepository.findAllByOrderBySortOrderAsc().stream()
+    public List<HabitTopicCategoryResponse> listTopicCategories() {
+        return topicCategoryRepository.findAllByOrderBySortOrderAsc().stream()
+                .map(c -> new HabitTopicCategoryResponse(c.getId(), c.getTitle(), c.getSubtitle(), c.getIcon()))
+                .toList();
+    }
+
+    public List<HabitTopicSummaryResponse> listTopicsByCategory(Long categoryId) {
+        return topicRepository.findAllByCategoryIdOrderBySortOrderAsc(categoryId).stream()
                 .map(t -> new HabitTopicSummaryResponse(t.getId(), t.getTitle(), t.getSubtitle(), t.getIcon()))
                 .toList();
     }
@@ -165,12 +171,12 @@ public class HabitService {
         return quizzes.get(index);
     }
 
-    private AwardResult awardPiece() {
+    private AwardResult awardPiece(Long memberId) {
         List<HabitPuzzleSet> sets = puzzleSetRepository.findAllByOrderBySortOrderAsc();
         if (sets.isEmpty()) {
             throw new ApiException(ErrorCode.HABIT_PUZZLE_SET_NOT_FOUND);
         }
-        Map<Long, HabitPuzzleProgress> progressBySetId = loadProgressBySetId();
+        Map<Long, HabitPuzzleProgress> progressBySetId = loadProgressBySetId(memberId);
 
         Optional<HabitPuzzleSet> currentOpt = findCurrentSet(sets, progressBySetId);
         if (currentOpt.isEmpty()) {
@@ -182,7 +188,7 @@ public class HabitService {
         }
 
         HabitPuzzleSet set = currentOpt.get();
-        HabitPuzzleProgress progress = progressBySetId.getOrDefault(set.getId(), new HabitPuzzleProgress(CURRENT_MEMBER_ID, set.getId()));
+        HabitPuzzleProgress progress = progressBySetId.getOrDefault(set.getId(), new HabitPuzzleProgress(memberId, set.getId()));
         boolean wasCompleted = progress.isCompleted();
         progress.addPiece(set.getTotalPieces());
         progressRepository.save(progress);
@@ -202,8 +208,8 @@ public class HabitService {
                 .findFirst();
     }
 
-    private Map<Long, HabitPuzzleProgress> loadProgressBySetId() {
-        return progressRepository.findAllByMemberId(CURRENT_MEMBER_ID).stream()
+    private Map<Long, HabitPuzzleProgress> loadProgressBySetId(Long memberId) {
+        return progressRepository.findAllByMemberId(memberId).stream()
                 .collect(Collectors.toMap(HabitPuzzleProgress::getPuzzleSetId, Function.identity()));
     }
 

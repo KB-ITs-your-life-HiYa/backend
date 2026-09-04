@@ -12,25 +12,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "habit_topic")
+@Table(name = "habit_topic_category")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class HabitTopic {
+public class HabitTopicCategory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "category_id")
-    private Long categoryId;
 
     private String title;
 
     private String subtitle;
 
     private String icon;
-
-    private String body;
 
     @Column(name = "sort_order")
     private int sortOrder;

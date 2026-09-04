@@ -17,6 +17,7 @@ public class CareResponse {
     private String selectedValue;
     private String inputText;
     private String aiReply;
+    private String aiStatus;
     private String ruleReply;
     private String requestId;
     private String requestPayload;

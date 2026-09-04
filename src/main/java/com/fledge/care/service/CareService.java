@@ -28,6 +28,10 @@ import java.util.stream.Collectors;
 @Slf4j
 @Transactional
 public class CareService {
+    public record GeminiHistory(String userText, String reply) {}
+    public record GeminiPreparation(Long responseId, boolean shouldGenerate, String signalType,
+                                    String scheduleName, LocalDate expectedDate, Long expectedAmount,
+                                    String input, List<GeminiHistory> history) {}
     private final ReferralRequestRepository referrals;
     private final com.fasterxml.jackson.databind.ObjectMapper mapper;
     private final MemberRepository members;
@@ -104,6 +108,107 @@ public class CareService {
         if (request.choice() == Choice.DIFFICULT) response.setPolicyStatus("PENDING");
         response.setCreatedAt(now);
         responses.save(response);
+        return snapshot(memberId);
+    }
+
+    public GeminiPreparation prepareFreeText(Long memberId, Long signalId, FreeTextRequest request) {
+        lock(memberId);
+        CareSignal signal = signals.findByIdAndMemberId(signalId, memberId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CARE_SIGNAL_NOT_FOUND));
+        String input = request.input().trim();
+        Optional<CareResponse> previous = responses.findByCareSignalIdAndRequestId(signalId, request.requestId());
+        if (previous.isPresent()) {
+            if (!Objects.equals(previous.get().getRequestPayload(), input))
+                throw new ApiException(ErrorCode.CARE_REQUEST_CONFLICT);
+            return geminiPreparation(memberId, signal, previous.get(), false);
+        }
+        if (!"OPEN".equals(signal.getStatus())) throw new ApiException(ErrorCode.CARE_SIGNAL_RESOLVED);
+
+        CareResponse response = new CareResponse();
+        response.setCareSignalId(signalId);
+        response.setInputType("FREE_TEXT");
+        response.setInputText(input);
+        response.setRequestId(request.requestId());
+        response.setRequestPayload(input);
+        response.setAiStatus("PENDING");
+        response.setCreatedAt(time.now(memberId));
+        responses.save(response);
+        return geminiPreparation(memberId, signal, response, true);
+    }
+
+    public GeminiPreparation prepareGeminiRetry(Long memberId, Long signalId, Long responseId) {
+        lock(memberId);
+        CareSignal signal = signals.findByIdAndMemberId(signalId, memberId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CARE_SIGNAL_NOT_FOUND));
+        if (!"OPEN".equals(signal.getStatus())) throw new ApiException(ErrorCode.CARE_SIGNAL_RESOLVED);
+        CareResponse response = responses.findByIdAndCareSignalId(responseId, signalId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        if (!"FREE_TEXT".equals(response.getInputType()) || !"ERROR".equals(response.getAiStatus()))
+            throw new ApiException(ErrorCode.CARE_GEMINI_RETRY_NOT_ALLOWED);
+        response.setAiStatus("PENDING");
+        return geminiPreparation(memberId, signal, response, true);
+    }
+
+    private GeminiPreparation geminiPreparation(Long memberId, CareSignal signal, CareResponse response,
+                                                boolean shouldGenerate) {
+        MoneyCycle cycle = cycles.findByIdAndMemberId(signal.getMoneyCycleId(), memberId).orElseThrow();
+        MoneySchedule schedule = schedules.findByIdAndMemberId(cycle.getScheduleId(), memberId).orElseThrow();
+        List<GeminiHistory> history = responses.findByCareSignalIdOrderByCreatedAtAscIdAsc(signal.getId()).stream()
+                .filter(r -> !Objects.equals(r.getId(), response.getId()))
+                .filter(r -> (r.getRuleReply() != null || r.getAiReply() != null))
+                .map(r -> new GeminiHistory(
+                        "FREE_TEXT".equals(r.getInputType()) ? r.getInputText() : r.getSelectedValue(),
+                        r.getRuleReply() != null ? r.getRuleReply() : r.getAiReply()))
+                .toList();
+        return new GeminiPreparation(response.getId(), shouldGenerate, signal.getSignalType(), schedule.getName(),
+                cycle.getExpectedDate(), cycle.getExpectedAmount(), response.getInputText(), history);
+    }
+
+    public Summary completeFreeText(Long memberId, Long signalId, Long responseId, Choice choice, String aiReply) {
+        lock(memberId);
+        CareSignal signal = signals.findByIdAndMemberId(signalId, memberId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CARE_SIGNAL_NOT_FOUND));
+        CareResponse response = responses.findByIdAndCareSignalId(responseId, signalId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        if ("READY".equals(response.getAiStatus())) return snapshot(memberId);
+        if (!"PENDING".equals(response.getAiStatus()))
+            throw new ApiException(ErrorCode.CARE_GEMINI_RETRY_NOT_ALLOWED);
+
+        OffsetDateTime now = time.now(memberId);
+        String reply = aiReply;
+        switch (choice) {
+            case ALREADY_DONE -> {
+                MoneyCycle cycle = cycles.findByIdAndMemberId(signal.getMoneyCycleId(), memberId).orElseThrow();
+                MoneySchedule schedule = schedules.findByIdAndMemberId(cycle.getScheduleId(), memberId).orElseThrow();
+                boolean matched = moneyCycles.match(cycle, schedule, now);
+                reply = matched ? "실제 거래가 확인되어 이번 상담을 해결했어요."
+                        : "아직 거래 내역이 확인되지 않았어요. 확인될 때까지 이 상담을 유지할게요.";
+            }
+            case DIFFICULT -> {
+                signal.setResponseResult("NEEDS_CARE");
+                boolean alreadyOffered = responses.findByCareSignalIdOrderByCreatedAtAscIdAsc(signalId).stream()
+                        .filter(r -> !Objects.equals(r.getId(), responseId))
+                        .anyMatch(r -> "DIFFICULT".equals(r.getSelectedValue()) && r.getPolicyStatus() != null);
+                if (!alreadyOffered) response.setPolicyStatus("PENDING");
+            }
+            case LATER -> signal.setResponseResult(null);
+            case CHANGED -> { /* 기존 일정 변경 폼에서 구조화된 값을 다시 받는다. */ }
+        }
+        signal.setClassificationSource("GEMINI");
+        signal.setUpdatedAt(now);
+        response.setSelectedValue(choice.name());
+        response.setAiReply(reply);
+        response.setAiStatus("READY");
+        return snapshot(memberId);
+    }
+
+    public Summary failFreeText(Long memberId, Long signalId, Long responseId) {
+        lock(memberId);
+        signals.findByIdAndMemberId(signalId, memberId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CARE_SIGNAL_NOT_FOUND));
+        CareResponse response = responses.findByIdAndCareSignalId(responseId, signalId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        if (!"READY".equals(response.getAiStatus())) response.setAiStatus("ERROR");
         return snapshot(memberId);
     }
 
@@ -275,11 +380,12 @@ public class CareService {
             MoneyCycle c = cycleById.get(s.getMoneyCycleId());
             List<Option> options = CareRules.options(s.getSignalType());
             List<Reply> replies = responses.findByCareSignalIdOrderByCreatedAtAscIdAsc(s.getId()).stream()
-                    .map(r -> new Reply(r.getId(), r.getSelectedValue(),
+                    .map(r -> new Reply(r.getId(), r.getInputType(), r.getSelectedValue(),
                             "BUTTON".equals(r.getInputType()) ? options.stream()
                                     .filter(o -> o.value().name().equals(r.getSelectedValue()))
                                     .map(Option::label).findFirst().orElse(r.getSelectedValue()) : r.getInputText(),
-                            r.getRuleReply() != null ? r.getRuleReply() : r.getAiReply(), r.getCreatedAt(), policyView(r))).toList();
+                            r.getRuleReply() != null ? r.getRuleReply() : r.getAiReply(), r.getRequestId(),
+                            r.getAiStatus(), r.getCreatedAt(), policyView(r))).toList();
             return new Signal(s.getId(), c.getId(), scheduleById.get(c.getScheduleId()).getName(), s.getSignalType(),
                     s.getStatus(), s.getResponseResult(), CareRules.prompt(s.getSignalType()),
                     "OPEN".equals(s.getStatus()) && replies.isEmpty() ? options : List.of(),

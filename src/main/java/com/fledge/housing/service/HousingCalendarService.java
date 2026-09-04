@@ -41,6 +41,12 @@ public class HousingCalendarService {
     private final SidoRepository sidoRepository;
 
     public HousingCalendarResponse findByMonth(int year, int month, Long memberId, String regionCode) {
+        // YearMonth.of 가 던지는 DateTimeException 은 아무도 안 잡아서 500 으로 샌다.
+        // 여기서 먼저 걸러서 400 으로 응답한다.
+        if (month < 1 || month > 12) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "월은 1~12 사이여야 합니다");
+        }
+
         YearMonth target = YearMonth.of(year, month);
         LocalDate monthStart = target.atDay(1);
         LocalDate monthEnd = target.atEndOfMonth();

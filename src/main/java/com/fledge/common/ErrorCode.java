@@ -40,6 +40,7 @@ public enum ErrorCode {
     CARE_REFERRAL_NOT_ELIGIBLE(HttpStatus.CONFLICT, "현재는 담당자 연결 요청 조건에 해당하지 않습니다"),
     CARE_DEMO_RESET_FAILED(HttpStatus.CONFLICT, "시연 데이터 초기화에 실패했습니다. 계좌·일정 충돌 또는 기존 데이터 참조를 확인해 주세요"),
     CARE_REQUEST_CONFLICT(HttpStatus.CONFLICT, "같은 요청 번호로 다른 답변을 보낼 수 없습니다"),
+    CARE_GEMINI_RETRY_NOT_ALLOWED(HttpStatus.CONFLICT, "재시도할 수 있는 상담 답변이 아닙니다"),
 
     MEMBER_SURVEY_INVALID(HttpStatus.BAD_REQUEST, "설문 값이 올바르지 않습니다");
 

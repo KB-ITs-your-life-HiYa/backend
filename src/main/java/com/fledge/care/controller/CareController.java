@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class CareController {
     private final CareService care;
     private final com.fledge.care.service.CarePolicyService policies;
+    private final com.fledge.care.service.CareGeminiService gemini;
 
     @GetMapping
     @Operation(summary = "내 케어 상태와 상담 이력 조회")
@@ -34,6 +35,22 @@ public class CareController {
     public ApiResponse<Summary> respond(@AuthenticationPrincipal AuthenticatedMember me,
                                        @PathVariable Long signalId, @Valid @RequestBody ButtonRequest request) {
         return ApiResponse.ok(care.respond(me.id(), signalId, request));
+    }
+
+    @PostMapping("/signals/{signalId}/messages")
+    @Operation(summary = "Gemini 직접입력 상담")
+    public ApiResponse<Summary> message(@AuthenticationPrincipal AuthenticatedMember me,
+                                       @PathVariable Long signalId,
+                                       @Valid @RequestBody FreeTextRequest request) {
+        return ApiResponse.ok(gemini.message(me.id(), signalId, request));
+    }
+
+    @PostMapping("/signals/{signalId}/responses/{responseId}/gemini")
+    @Operation(summary = "실패한 Gemini 답변 재시도")
+    public ApiResponse<Summary> retryGemini(@AuthenticationPrincipal AuthenticatedMember me,
+                                           @PathVariable Long signalId,
+                                           @PathVariable Long responseId) {
+        return ApiResponse.ok(gemini.retry(me.id(), signalId, responseId));
     }
     @PostMapping("/signals/{signalId}/responses/{responseId}/policies")
     @Operation(summary = "상담에 맞는 온통청년 정책 조회 또는 재시도")

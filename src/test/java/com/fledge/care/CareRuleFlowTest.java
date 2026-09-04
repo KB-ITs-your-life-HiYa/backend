@@ -85,6 +85,8 @@ class CareRuleFlowTest {
                 .filter(r -> r.getCareSignalId().equals(a.getArgument(0))).toList());
         when(responses.findByCareSignalIdAndRequestId(anyLong(), anyString())).thenAnswer(a -> responseRows.stream()
                 .filter(r -> r.getCareSignalId().equals(a.getArgument(0)) && r.getRequestId().equals(a.getArgument(1))).findFirst());
+        when(responses.findByIdAndCareSignalId(anyLong(), anyLong())).thenAnswer(a -> responseRows.stream()
+                .filter(r -> r.getId().equals(a.getArgument(0)) && r.getCareSignalId().equals(a.getArgument(1))).findFirst());
         when(responses.save(any())).thenAnswer(a -> {
             CareResponse r = a.getArgument(0); r.setId((long) responseRows.size() + 1); responseRows.add(r); return r;
         });
@@ -149,6 +151,66 @@ class CareRuleFlowTest {
         assertThat(summary.signals().getFirst().replies()).hasSize(2);
         assertThat(signalRows.getFirst().getResponseResult()).isNull();
         assertThat(care.summary(2L).signals().getFirst().replies().getFirst().reply()).contains("기록");
+    }
+
+    @Test void freeTextUsesExistingChoiceFlowAndDoesNotRepeatPolicies() {
+        day(24);
+        var first = care.prepareFreeText(2L, 1L, new FreeTextRequest(" 이번 달 적금이 어려워요 ", "free-1"));
+        assertThat(first.input()).isEqualTo("이번 달 적금이 어려워요");
+        assertThat(responseRows.getFirst().getAiStatus()).isEqualTo("PENDING");
+
+        var difficult = care.completeFreeText(2L, 1L, first.responseId(), Choice.DIFFICULT, "생활비를 먼저 살펴봐요.");
+        assertThat(difficult.riskScore()).isEqualTo(25);
+        assertThat(difficult.signals().getFirst().responseResult()).isEqualTo("NEEDS_CARE");
+        assertThat(difficult.signals().getFirst().replies().getFirst().policies().status()).isEqualTo("PENDING");
+        assertThat(difficult.signals().getFirst().replies().getFirst().inputType()).isEqualTo("FREE_TEXT");
+
+        var followUp = care.prepareFreeText(2L, 1L, new FreeTextRequest("해지할지 고민돼요", "free-2"));
+        care.completeFreeText(2L, 1L, followUp.responseId(), Choice.DIFFICULT, "중도해지 조건을 먼저 확인해 보세요.");
+        assertThat(responseRows.get(1).getPolicyStatus()).isNull();
+
+        var later = care.prepareFreeText(2L, 1L, new FreeTextRequest("조금 더 생각해볼게요", "free-3"));
+        care.completeFreeText(2L, 1L, later.responseId(), Choice.LATER, "필요할 때 다시 이야기해 주세요.");
+        assertThat(signalRows.getFirst().getResponseResult()).isNull();
+        assertThat(signalRows.getFirst().getStatus()).isEqualTo("OPEN");
+        assertThat(signalRows.getFirst().getClassificationSource()).isEqualTo("GEMINI");
+    }
+
+    @Test void freeTextChangedWaitsForStructuredScheduleForm() {
+        day(24);
+        var prepared = care.prepareFreeText(2L, 1L, new FreeTextRequest("납입일을 바꾸고 싶어요", "free-change"));
+        var result = care.completeFreeText(2L, 1L, prepared.responseId(), Choice.CHANGED, "변경할 내용을 입력해 주세요.");
+        assertThat(scheduleRows.getFirst().getExpectedDay()).isEqualTo(23);
+        assertThat(scheduleRows.getFirst().getExpectedAmount()).isEqualTo(200000L);
+        assertThat(result.signals().getFirst().status()).isEqualTo("OPEN");
+        assertThat(result.signals().getFirst().replies().getFirst().choice()).isEqualTo("CHANGED");
+    }
+
+    @Test void freeTextAlreadyDoneStillRequiresARealTransaction() {
+        day(24);
+        var missing = care.prepareFreeText(2L, 1L, new FreeTextRequest("이미 납입했어요", "free-done-1"));
+        var unresolved = care.completeFreeText(2L, 1L, missing.responseId(), Choice.ALREADY_DONE, "확인할게요.");
+        assertThat(unresolved.riskScore()).isEqualTo(25);
+        assertThat(unresolved.signals().getFirst().status()).isEqualTo("OPEN");
+
+        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "KB국민 시연 정기적금");
+        var paid = care.prepareFreeText(2L, 1L, new FreeTextRequest("거래를 다시 확인해 주세요", "free-done-2"));
+        var resolved = care.completeFreeText(2L, 1L, paid.responseId(), Choice.ALREADY_DONE, "확인할게요.");
+        assertThat(resolved.riskScore()).isZero();
+        assertThat(resolved.signals().getFirst().status()).isEqualTo("RESOLVED");
+    }
+
+    @Test void freeTextFailureCanRetryAndDuplicateRequestDoesNotAddRows() {
+        day(24);
+        var request = new FreeTextRequest("도움이 필요해요", "free-retry");
+        var prepared = care.prepareFreeText(2L, 1L, request);
+        care.failFreeText(2L, 1L, prepared.responseId());
+        assertThat(care.summary(2L).signals().getFirst().replies().getFirst().aiStatus()).isEqualTo("ERROR");
+        assertThat(care.prepareFreeText(2L, 1L, request).shouldGenerate()).isFalse();
+        assertThat(responseRows).hasSize(1);
+        var retry = care.prepareGeminiRetry(2L, 1L, prepared.responseId());
+        care.completeFreeText(2L, 1L, retry.responseId(), Choice.LATER, "다시 답변했어요.");
+        assertThat(responseRows.getFirst().getAiStatus()).isEqualTo("READY");
     }
 
     @Test void alreadyDoneRequiresRealTransactionAndDuplicateRetryIsIdempotent() {

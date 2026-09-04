@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface HabitTopicRepository extends JpaRepository<HabitTopic, Long> {
 
-    List<HabitTopic> findAllByOrderBySortOrderAsc();
+    List<HabitTopic> findAllByCategoryIdOrderBySortOrderAsc(Long categoryId);
 }

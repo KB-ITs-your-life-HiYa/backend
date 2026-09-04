@@ -15,7 +15,8 @@ public final class CareDto {
     public record PolicyCard(String id, String category, String name, String support,
                              String applicationPeriod, String organization, String detailUrl) {}
     public record Policies(String status, List<PolicyCard> cards) {}
-    public record PolicyContext(Long responseId, String signalType, LocalDate asOf, boolean ready) {}
+    public record PolicyContext(Long responseId, String signalType, LocalDate asOf,
+                                String regionCode, boolean ready) {}
     public record ReferralConsent(@NotNull @AssertTrue Boolean consent) {}
     public record Referral(Long id, String status, String reason, OffsetDateTime requestedAt) {}
     public record Reply(Long id, String choice, String userText, String reply, OffsetDateTime createdAt,

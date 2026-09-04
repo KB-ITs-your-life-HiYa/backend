@@ -17,6 +17,13 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ApiResponse<Void>> handleMalformedRequest(Exception e) {
+        return ResponseEntity.badRequest().body(ApiResponse.fail(ErrorCode.INVALID_REQUEST,
+                ErrorCode.INVALID_REQUEST.getMessage()));
+    }
+
     /** 서비스가 의도적으로 던진 실패 */
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException e) {

@@ -80,6 +80,7 @@ public class Subsidy {
     }
 
     public Long getId() { return id; }
+    public Long getRawId() { return rawId; }
 
     public void setSummary(String summary) { this.summary = summary; }
     public void setOrgName(String orgName) { this.orgName = orgName; }

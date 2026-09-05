@@ -37,6 +37,17 @@ public class BenefitMatchingService {
     private static final List<String> CATEGORY_ORDER =
             List.of("생활안정", "주거자립", "교육", "취업", "금융", "보건의료", "보호돌봄");
 
+    // member_survey_tag 와 같은 어휘. "대상 특성" 조건에 사람이 읽을 수 있는 이름을 붙이는 용도
+    private static final Map<String, String> TAG_LABELS = Map.of(
+            "SINGLE_PARENT", "한부모",
+            "MULTICULTURAL", "다문화",
+            "DISABILITY", "장애",
+            "MULTI_CHILD", "다자녀",
+            "SEVERE_ILLNESS", "중증질환",
+            "NORTH_KOREAN_DEFECTOR", "북한이탈",
+            "GRANDPARENT_FAMILY", "조손가정"
+    );
+
     private final MemberRepository memberRepository;
     private final MemberSurveyRepository memberSurveyRepository;
     private final MemberSurveyTagRepository memberSurveyTagRepository;
@@ -115,7 +126,10 @@ public class BenefitMatchingService {
 
         if (s.getTargetHousehold() != null && !s.getTargetHousehold().isEmpty()) {
             boolean hasAny = s.getTargetHousehold().stream().anyMatch(tags::contains);
-            conditions.add(new MatchCondition("대상 특성", hasAny ? MatchStatus.MET : MatchStatus.NEEDS_REVIEW));
+            String targetLabel = s.getTargetHousehold().stream()
+                    .map(t -> TAG_LABELS.getOrDefault(t, t))
+                    .collect(Collectors.joining("·"));
+            conditions.add(new MatchCondition("대상 특성(" + targetLabel + ")", hasAny ? MatchStatus.MET : MatchStatus.NEEDS_REVIEW));
         }
 
         List<SubsidyRegion> regions = subsidyRegionRepository.findBySubsidy_Id(s.getId());

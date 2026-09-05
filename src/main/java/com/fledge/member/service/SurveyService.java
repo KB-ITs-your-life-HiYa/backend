@@ -30,6 +30,13 @@ public class SurveyService {
     private final MemberSurveyRepository memberSurveyRepository;
     private final MemberSurveyTagRepository memberSurveyTagRepository;
 
+    /** 저장된 설문이 없으면 null. 프론트에서 "설문을 아직 안 한 회원"을 구분하는 용도 */
+    public SurveyResponse findMe(Long memberId) {
+        return memberSurveyRepository.findById(memberId)
+                .map(survey -> SurveyResponse.of(survey, tagsOf(memberId)))
+                .orElse(null);
+    }
+
     @Transactional
     public SurveyResponse save(Long memberId, SurveyRequest request) {
         if (request.incomePctBracket() != null
@@ -61,5 +68,11 @@ public class SurveyService {
         memberSurveyTagRepository.saveAll(tagEntities);
 
         return SurveyResponse.of(survey, tags);
+    }
+
+    private List<String> tagsOf(Long memberId) {
+        return memberSurveyTagRepository.findByMemberId(memberId).stream()
+                .map(MemberSurveyTag::getTag)
+                .toList();
     }
 }

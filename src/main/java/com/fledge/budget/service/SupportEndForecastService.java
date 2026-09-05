@@ -77,7 +77,7 @@ public class SupportEndForecastService {
         if (monthsWithData.isEmpty()) {
             Forecast forecast = new Forecast(
                     daysUntilSupportEnd, monthsUntilSupportEnd, 0, false,
-                    null, currentSavingsTotal, null, null
+                    null, null, null, currentSavingsTotal, null, null
             );
             return new SupportEndForecastResponse(true, forecast);
         }
@@ -119,7 +119,7 @@ public class SupportEndForecastService {
         Reduction reduction = new Reduction(categoryReductions, totalMonthlySavings, totalSavingsByEnd, improvedRunwayMonths);
         Forecast forecast = new Forecast(
                 daysUntilSupportEnd, monthsUntilSupportEnd, monthsUsed, true,
-                monthlyShortfall, currentSavingsTotal, savingsRunwayMonths, reduction
+                incomeExcludingAllowance, averageExpense, monthlyShortfall, currentSavingsTotal, savingsRunwayMonths, reduction
         );
         return new SupportEndForecastResponse(true, forecast);
     }

@@ -45,7 +45,10 @@ public enum ErrorCode {
     MEMBER_SURVEY_INVALID(HttpStatus.BAD_REQUEST, "설문 값이 올바르지 않습니다"),
 
     // housing — 독립지원
-    HOUSING_NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공고를 찾을 수 없습니다");
+    HOUSING_NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공고를 찾을 수 없습니다"),
+    HOUSING_CHECKLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "체크리스트를 찾을 수 없습니다"),
+    HOUSING_CHECKLIST_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "체크리스트 항목을 찾을 수 없습니다"),
+    HOUSING_CHECKLIST_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 같은 종류의 체크리스트가 있습니다");
 
     private final HttpStatus status;
     private final String message;

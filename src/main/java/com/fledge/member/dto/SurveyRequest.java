@@ -19,8 +19,8 @@ public record SurveyRequest(
         @Schema(description = "기초생활수급자 등 여부")
         Boolean isBenefitRecipient,
 
-        @Schema(description = "재직 상태")
-        @Pattern(regexp = "EMPLOYED|SEEKING|STUDENT|UNEMPLOYED|SELF_EMPLOYED",
+        @Schema(description = "재직 상태. JOB_SEEKER 는 졸업(중퇴) 후 2년 이내 구직중")
+        @Pattern(regexp = "EMPLOYED|SELF_EMPLOYED|STUDENT|JOB_SEEKER|UNEMPLOYED",
                 message = "올바르지 않은 재직 상태입니다")
         String employmentStatus,
 

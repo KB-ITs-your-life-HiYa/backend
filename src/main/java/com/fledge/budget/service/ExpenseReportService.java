@@ -36,8 +36,8 @@ public class ExpenseReportService {
         List<FinancialTransaction> txns = transactionRepository
                 .findByMemberIdAndTxnDateBetweenOrderByTxnDateAscIdAsc(memberId, lastMonthStart, today);
 
-        long currentTotal = sumExpense(txns, currentMonthStart, today);
-        long lastPeriodTotal = sumExpense(txns, lastMonthStart, lastMonthSameDay);
+        long currentTotal = TransactionAggregator.sumExpense(txns, currentMonthStart, today);
+        long lastPeriodTotal = TransactionAggregator.sumExpense(txns, lastMonthStart, lastMonthSameDay);
         return ExpenseSummaryResponse.of(currentTotal, lastPeriodTotal);
     }
 
@@ -52,14 +52,14 @@ public class ExpenseReportService {
                 .findByMemberIdAndTxnDateBetweenOrderByTxnDateAscIdAsc(memberId, fetchFrom, fetchTo);
 
         // a) 해당 월 요약 — 항상 월 전체 범위 (진행 중인 달이어도 미래 거래가 없어 자연히 오늘까지만 잡힘)
-        long totalExpense = sumExpense(txns, month.atDay(1), month.atEndOfMonth());
-        long totalIncome = sumIncome(txns, month.atDay(1), month.atEndOfMonth());
+        long totalExpense = TransactionAggregator.sumExpense(txns, month.atDay(1), month.atEndOfMonth());
+        long totalIncome = TransactionAggregator.sumIncome(txns, month.atDay(1), month.atEndOfMonth());
 
         // b) 최근 3개월 그래프
         List<MonthPoint> monthPoints = new ArrayList<>();
         for (int i = 2; i >= 0; i--) {
             YearMonth m = month.minusMonths(i);
-            monthPoints.add(new MonthPoint(m.toString(), sumExpense(txns, m.atDay(1), m.atEndOfMonth())));
+            monthPoints.add(new MonthPoint(m.toString(), TransactionAggregator.sumExpense(txns, m.atDay(1), m.atEndOfMonth())));
         }
         long averageExpense = Math.round(
                 monthPoints.stream().mapToLong(MonthPoint::totalExpense).average().orElse(0));
@@ -71,8 +71,8 @@ public class ExpenseReportService {
         Map<ExpenseCategory, Long> currentByCategory = new EnumMap<>(ExpenseCategory.class);
         Map<ExpenseCategory, Long> previousByCategory = new EnumMap<>(ExpenseCategory.class);
         for (ExpenseCategory c : ExpenseCategory.values()) {
-            currentByCategory.put(c, sumCategory(txns, c, month.atDay(1), currentPeriodEnd));
-            previousByCategory.put(c, sumCategory(txns, c, prevMonth.atDay(1), prevPeriodEnd));
+            currentByCategory.put(c, TransactionAggregator.sumCategory(txns, c, month.atDay(1), currentPeriodEnd));
+            previousByCategory.put(c, TransactionAggregator.sumCategory(txns, c, prevMonth.atDay(1), prevPeriodEnd));
         }
         long maxCurrent = currentByCategory.values().stream().mapToLong(Long::longValue).max().orElse(0);
 
@@ -100,35 +100,5 @@ public class ExpenseReportService {
                 new Navigation(hasPrevious, hasNext),
                 null
         );
-    }
-
-    private long sumExpense(List<FinancialTransaction> txns, LocalDate from, LocalDate to) {
-        return txns.stream()
-                .filter(t -> "EXPENSE".equals(t.getTxnType()))
-                .filter(t -> !"SAVINGS".equals(t.getCategory()))
-                .filter(t -> inRange(t, from, to))
-                .mapToLong(FinancialTransaction::getAmount)
-                .sum();
-    }
-
-    private long sumIncome(List<FinancialTransaction> txns, LocalDate from, LocalDate to) {
-        return txns.stream()
-                .filter(t -> "INCOME".equals(t.getTxnType()))
-                .filter(t -> inRange(t, from, to))
-                .mapToLong(FinancialTransaction::getAmount)
-                .sum();
-    }
-
-    private long sumCategory(List<FinancialTransaction> txns, ExpenseCategory category, LocalDate from, LocalDate to) {
-        return txns.stream()
-                .filter(t -> "EXPENSE".equals(t.getTxnType()))
-                .filter(t -> category.name().equals(t.getCategory()))
-                .filter(t -> inRange(t, from, to))
-                .mapToLong(FinancialTransaction::getAmount)
-                .sum();
-    }
-
-    private boolean inRange(FinancialTransaction t, LocalDate from, LocalDate to) {
-        return !t.getTxnDate().isBefore(from) && !t.getTxnDate().isAfter(to);
     }
 }

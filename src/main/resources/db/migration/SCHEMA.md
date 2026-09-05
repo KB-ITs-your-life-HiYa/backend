@@ -165,7 +165,8 @@ FK 컬럼 중 상당수는 `UNIQUE` 제약이 앞자리를 덮고 있어 별도 
 
 ```
 member_survey.employment_status
-  EMPLOYED 재직중 · SEEKING 구직중 · STUDENT 학생 · UNEMPLOYED 무직 · SELF_EMPLOYED 자영업
+  EMPLOYED 재직중 · SELF_EMPLOYED 자영업 · STUDENT 재학중
+  JOB_SEEKER 취업준비생(졸업·중퇴 후 2년 이내) · UNEMPLOYED 무직(그 외)
 
 member_survey_tag.tag                     ← subsidy 대상 조건과 같은 어휘를 쓴다
   SINGLE_PARENT 한부모 · MULTICULTURAL 다문화 · DISABILITY 장애 · MULTI_CHILD 다자녀

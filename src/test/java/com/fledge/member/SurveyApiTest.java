@@ -63,7 +63,7 @@ class SurveyApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"householdSize":3,"incomePctBracket":60,"isBenefitRecipient":true,
-                                 "employmentStatus":"SEEKING","housingType":"MONTHLY_RENT","tags":["MULTI_CHILD"]}"""))
+                                 "employmentStatus":"JOB_SEEKER","housingType":"MONTHLY_RENT","tags":["MULTI_CHILD"]}"""))
                 .andExpect(status().isOk());
 
         String response = mvc.perform(get(SURVEY).header("Authorization", "Bearer " + token))
@@ -74,7 +74,7 @@ class SurveyApiTest {
         assertThat(data.path("householdSize").asInt()).isEqualTo(3);
         assertThat(data.path("incomePctBracket").asInt()).isEqualTo(60);
         assertThat(data.path("isBenefitRecipient").asBoolean()).isTrue();
-        assertThat(data.path("employmentStatus").asText()).isEqualTo("SEEKING");
+        assertThat(data.path("employmentStatus").asText()).isEqualTo("JOB_SEEKER");
         assertThat(data.path("housingType").asText()).isEqualTo("MONTHLY_RENT");
         assertThat(data.path("tags").get(0).asText()).isEqualTo("MULTI_CHILD");
     }

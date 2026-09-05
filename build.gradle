@@ -46,4 +46,10 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+
+	// 테스트는 항상 test 프로필로 뜬다 (application-test.properties -> 별도 DB).
+	// application.properties 파일로 프로필을 지정하지 않는 이유:
+	// src/test/resources 에 같은 이름 파일을 두면 src/main/resources 의 파일을
+	// 통째로 가려버려서, 거기 있는 공통 설정(jwt.secret 등)이 전부 사라진다.
+	systemProperty 'spring.profiles.active', 'test'
 }

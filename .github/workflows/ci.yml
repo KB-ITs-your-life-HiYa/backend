@@ -51,6 +51,15 @@ jobs:
       - name: Gradle 설정 (의존성 캐시 포함)
         uses: gradle/actions/setup-gradle@v6
 
+      # 테스트는 application-test.properties 로 fledge_test 라는 별도 DB 에 붙는다.
+      # (./gradlew test 가 개발 중인 DB를 지우는 걸 막기 위한 분리 — src/test/resources 참고)
+      # 로컬은 docker/postgres-init 스크립트가 자동으로 만들어주지만, CI 의 postgres 서비스는
+      # docker-compose.yml 을 쓰지 않아 그 스크립트가 적용되지 않으므로 여기서 직접 만든다.
+      - name: 테스트 DB 생성
+        run: |
+          sudo apt-get install --yes --no-install-recommends postgresql-client > /dev/null
+          PGPASSWORD=fledge_local psql -h localhost -U fledge -d fledge -c "CREATE DATABASE fledge_test;"
+
       # 스키마와 시드는 Flyway 가 기동 시 적용한다. 따로 준비할 것이 없다.
       - name: 빌드 + 테스트
         run: ./gradlew build

@@ -32,6 +32,13 @@ public class MemberController {
         return ApiResponse.ok(memberService.findMe(me.id()));
     }
 
+    @Operation(summary = "정책 매칭 설문 조회",
+            description = "저장된 설문이 없으면 data 가 null 로 내려간다")
+    @GetMapping("/me/survey")
+    public ApiResponse<SurveyResponse> mySurvey(@AuthenticationPrincipal AuthenticatedMember me) {
+        return ApiResponse.ok(surveyService.findMe(me.id()));
+    }
+
     @Operation(summary = "정책 매칭 설문 저장",
             description = "가구·소득·재직·주거 등 매칭에 필요한 추가 정보를 저장한다. 이미 저장된 값이 있으면 덮어쓴다")
     @PostMapping("/me/survey")

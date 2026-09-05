@@ -55,6 +55,8 @@ class SupportEndForecastApiTest {
                 .andExpect(jsonPath("$.data.forecast.monthsUsedForAverage").value(2))
                 .andExpect(jsonPath("$.data.forecast.dataAvailable").value(true))
                 .andExpect(jsonPath("$.data.forecast.currentSavingsTotal").value(3580000))
+                .andExpect(jsonPath("$.data.forecast.incomeExcludingAllowance").value(381840))
+                .andExpect(jsonPath("$.data.forecast.averageExpense").value(799950))
                 .andExpect(jsonPath("$.data.forecast.monthlyShortfall").value(418110))
                 .andExpect(jsonPath("$.data.forecast.savingsRunwayMonths").value(8))
                 .andExpect(jsonPath("$.data.forecast.reduction.categories.length()").value(4))

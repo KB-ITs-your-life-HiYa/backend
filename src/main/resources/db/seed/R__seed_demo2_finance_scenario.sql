@@ -26,11 +26,11 @@ CREATE TEMP TABLE seed_demo2_account (
     id bigint PRIMARY KEY, bank_name varchar(50), account_type varchar(20), balance bigint
 ) ON COMMIT DROP;
 INSERT INTO seed_demo2_account VALUES
-  (11, 'KB국민', 'DEPOSIT', 2440600), -- 2,340,600 - 400,000 + 500,000
-  (12, '신한',   'DEPOSIT',  615800),
-  (13, 'KB국민', 'SAVINGS',  480000), -- 기존 자유적금
-  (14, '우리',   'SAVINGS', 2700000), -- 기존 월 5만 원 정기적금
-  (15, 'KB국민', 'SAVINGS',  400000); -- 시연용 월 20만 원 정기적금, 7~8월 두 번 납입
+  (11, 'KB국민 주거래 통장', 'DEPOSIT', 2440600), -- 2,340,600 - 400,000 + 500,000
+  (12, '신한 SOL 입출금',   'DEPOSIT',  615800),
+  (13, 'KB국민 자유적금', 'SAVINGS',  480000), -- 기존 자유적금
+  (14, '우리 두근두근 행운적금',   'SAVINGS', 2700000), -- 기존 월 5만 원 정기적금
+  (15, 'KB청년미래적금', 'SAVINGS',  400000); -- 시연용 월 20만 원 정기적금, 7~8월 두 번 납입
 
 CREATE TEMP TABLE seed_demo2_schedule (
     id bigint PRIMARY KEY, direction varchar(3), type varchar(20), name varchar(100),

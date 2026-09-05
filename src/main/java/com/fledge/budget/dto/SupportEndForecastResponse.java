@@ -17,6 +17,8 @@ public record SupportEndForecastResponse(
             long monthsUntilSupportEnd,
             int monthsUsedForAverage,
             boolean dataAvailable,
+            Long incomeExcludingAllowance,
+            Long averageExpense,
             Long monthlyShortfall,
             long currentSavingsTotal,
             Long savingsRunwayMonths,

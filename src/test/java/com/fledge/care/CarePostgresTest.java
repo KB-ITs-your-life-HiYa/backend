@@ -45,7 +45,7 @@ class CarePostgresTest {
         assertThat(jdbc.queryForObject("select count(*) from referral_request where member_id=2", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from transaction where member_id=2", Integer.class)).isEqualTo(83);
         care.setDemoDate(2L, LocalDate.of(2026, 9, 24));
-        jdbc.update("insert into transaction(member_id,account_id,txn_date,txn_type,amount,merchant_name) values(2,11,'2026-09-24','EXPENSE',200000,'KB국민 시연 정기적금')");
+        jdbc.update("insert into transaction(member_id,account_id,txn_date,txn_type,amount,merchant_name) values(2,11,'2026-09-24','EXPENSE',200000,'KB청년미래적금')");
         care.setDemoDate(2L, LocalDate.of(2026, 10, 1));
         var resolved = care.summary(2L).signals().getFirst();
         assertThat(resolved.status()).isEqualTo("RESOLVED");

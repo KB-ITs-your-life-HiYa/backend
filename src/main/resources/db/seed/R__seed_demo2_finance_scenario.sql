@@ -37,8 +37,8 @@ CREATE TEMP TABLE seed_demo2_schedule (
     expected_amount bigint, expected_day smallint, match_keyword varchar(100)
 ) ON COMMIT DROP;
 INSERT INTO seed_demo2_schedule VALUES
-  (201, 'OUT', 'SAVINGS',       'KB국민 시연 정기적금', 200000, 23, 'KB국민 시연 정기적금'),
-  (202, 'OUT', 'SAVINGS',       '우리 정기적금',          50000, 15, '우리 정기적금'),
+  (201, 'OUT', 'SAVINGS',       'KB청년미래적금',          200000, 23, 'KB청년미래적금'),
+  (202, 'OUT', 'SAVINGS',       '우리 두근두근 행운적금',    50000, 15, '우리 두근두근 행운적금'),
   (203, 'IN',  'PART_TIME',     '카페모디 급여',           NULL, 25, '카페모디 급여'),
   (204, 'IN',  'OTHER_REGULAR', '경기도청 자립수당',     500000, 20, '경기도청 자립수당'),
   (205, 'OUT', 'RENT',          'LH 임대료',             138700,  1, 'LH 임대료'),
@@ -57,7 +57,7 @@ INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, m
   (2, 11, '2026-07-05', 'EXPENSE',  44200, '한국전력·도시가스',  'HOUSING_UTILITY'),
   (2, 11, '2026-07-05', 'EXPENSE',  29700, 'KT알뜰폰',          'HOUSING_UTILITY'),
   (2, 11, '2026-07-10', 'EXPENSE',  62000, '티머니 충전',        'TRANSPORT'),
-  (2, 11, '2026-07-15', 'EXPENSE',  50000, '우리 정기적금',      'SAVINGS'),
+  (2, 11, '2026-07-15', 'EXPENSE',  50000, '우리 두근두근 행운적금', 'SAVINGS'),
   (2, 11, '2026-07-22', 'EXPENSE', 100000, 'KB국민 자유적금',    'SAVINGS'),
   (2, 11, '2026-07-20', 'INCOME',  500000, '경기도청 자립수당',  NULL),
   (2, 11, '2026-07-25', 'INCOME',  412800, '카페모디 급여',      NULL);
@@ -99,7 +99,7 @@ INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, m
   (2, 11, '2026-08-05', 'EXPENSE',  49800, '한국전력·도시가스',  'HOUSING_UTILITY'),
   (2, 11, '2026-08-05', 'EXPENSE',  29700, 'KT알뜰폰',          'HOUSING_UTILITY'),
   (2, 11, '2026-08-10', 'EXPENSE',  58000, '티머니 충전',        'TRANSPORT'),
-  (2, 11, '2026-08-15', 'EXPENSE',  50000, '우리 정기적금',      'SAVINGS'),
+  (2, 11, '2026-08-15', 'EXPENSE',  50000, '우리 두근두근 행운적금', 'SAVINGS'),
   (2, 11, '2026-08-24', 'EXPENSE',  50000, 'KB국민 자유적금',    'SAVINGS'),
   (2, 11, '2026-08-20', 'INCOME',  500000, '경기도청 자립수당',  NULL),
   (2, 11, '2026-08-25', 'INCOME',  350880, '카페모디 급여',      NULL);
@@ -137,7 +137,7 @@ INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, m
   (2, 11, '2026-09-05', 'EXPENSE',  38900, '한국전력·도시가스',  'HOUSING_UTILITY'),
   (2, 11, '2026-09-05', 'EXPENSE',  29700, 'KT알뜰폰',          'HOUSING_UTILITY'),
   (2, 11, '2026-09-10', 'EXPENSE',  58000, '티머니 충전',        'TRANSPORT'),
-  (2, 11, '2026-09-15', 'EXPENSE',  50000, '우리 정기적금',      'SAVINGS');
+  (2, 11, '2026-09-15', 'EXPENSE',  50000, '우리 두근두근 행운적금', 'SAVINGS');
 
 INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
   (2, 12, '2026-09-02', 'EXPENSE',   8400, 'GS25',        'FOOD'),
@@ -158,8 +158,8 @@ INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, m
 
 -- 새 적금: 두 달 정상 납입. 9월 납입과 9월 카페 급여는 의도적으로 없음.
 INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
-  (2, 11, '2026-07-23', 'EXPENSE', 200000, 'KB국민 시연 정기적금', 'SAVINGS'),
-  (2, 11, '2026-08-23', 'EXPENSE', 200000, 'KB국민 시연 정기적금', 'SAVINGS'),
+  (2, 11, '2026-07-23', 'EXPENSE', 200000, 'KB청년미래적금', 'SAVINGS'),
+  (2, 11, '2026-08-23', 'EXPENSE', 200000, 'KB청년미래적금', 'SAVINGS'),
   (2, 11, '2026-09-20', 'INCOME', 500000, '경기도청 자립수당', NULL);
 
 -- 검산: 원본 주석 대신 실제 INSERT 행에서 다시 계산 (생활비 지출은 SAVINGS 제외).
@@ -184,7 +184,11 @@ BEGIN
     END IF;
     IF EXISTS (
         SELECT 1 FROM money_schedule m JOIN seed_demo2_schedule s ON s.id = m.id
-        WHERE m.member_id <> 2 OR m.name <> s.name OR m.type <> s.type OR m.direction <> s.direction
+        WHERE m.member_id <> 2 OR m.type <> s.type OR m.direction <> s.direction
+          OR (m.name <> s.name AND NOT (
+              (s.id = 201 AND m.name = 'KB국민 시연 정기적금')
+              OR (s.id = 202 AND m.name = '우리 정기적금')
+          ))
     ) THEN
         RAISE EXCEPTION 'Schedule id 201..207 collision; inspect before assigning different ids';
     END IF;
@@ -210,8 +214,14 @@ WHERE t.member_id = 2 AND (
           AND t.merchant_name IS NOT DISTINCT FROM s.merchant_name
           AND t.category IS NOT DISTINCT FROM s.category
     )
+    OR (t.account_id = 11 AND t.txn_type = 'EXPENSE' AND t.category = 'SAVINGS' AND (
+        (t.txn_date IN (DATE '2026-07-23', DATE '2026-08-23')
+            AND t.amount = 200000 AND t.merchant_name = 'KB국민 시연 정기적금')
+        OR (t.txn_date IN (DATE '2026-07-15', DATE '2026-08-15', DATE '2026-09-15')
+            AND t.amount = 50000 AND t.merchant_name = '우리 정기적금')
+    ))
     OR (t.account_id = 11 AND t.txn_date >= DATE '2026-09-01' AND t.txn_date < DATE '2026-10-01'
-        AND ((t.merchant_name = 'KB국민 시연 정기적금' AND t.txn_type = 'EXPENSE')
+        AND ((t.merchant_name IN ('KB청년미래적금', 'KB국민 시연 정기적금') AND t.txn_type = 'EXPENSE')
           OR (t.merchant_name = '카페모디 급여' AND t.txn_type = 'INCOME')))
 );
 
@@ -246,6 +256,7 @@ SELECT member_id, account_id, txn_date, txn_type, amount, merchant_name, categor
 INSERT INTO money_schedule (id, member_id, direction, type, name, expected_amount, expected_day, match_keyword, is_active)
 SELECT id, 2, direction, type, name, expected_amount, expected_day, match_keyword, true FROM seed_demo2_schedule
 ON CONFLICT (id) DO UPDATE SET
+    direction = EXCLUDED.direction, type = EXCLUDED.type, name = EXCLUDED.name,
     expected_amount = EXCLUDED.expected_amount, expected_day = EXCLUDED.expected_day,
     match_keyword = EXCLUDED.match_keyword, is_active = true, updated_at = now();
 
@@ -279,7 +290,7 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM transaction WHERE member_id = 2 AND account_id = 11
           AND txn_date >= DATE '2026-09-01' AND txn_date < DATE '2026-10-01'
-          AND ((merchant_name = 'KB국민 시연 정기적금' AND txn_type = 'EXPENSE')
+          AND ((merchant_name IN ('KB청년미래적금', 'KB국민 시연 정기적금') AND txn_type = 'EXPENSE')
             OR (merchant_name = '카페모디 급여' AND txn_type = 'INCOME'))
     ) THEN
         RAISE EXCEPTION 'September demo savings/salary must remain missing';

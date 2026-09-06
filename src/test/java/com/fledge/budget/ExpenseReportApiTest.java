@@ -11,8 +11,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -23,6 +25,10 @@ class ExpenseReportApiTest {
     private static final String LOGIN = "/api/v1/auth/login";
     private static final String SUMMARY = "/api/v1/members/me/expense-summary";
     private static final String REPORT = "/api/v1/members/me/expense-report";
+    private static final String BUDGET = "/api/v1/members/me/budget";
+
+    // 리포트-예산 연동 테스트 전용 달. 다른 테스트의 고정값과 겹치지 않도록 둔다
+    private static final String BUDGET_LINKED_MONTH = "2027-07";
 
     // demo1 시드 데이터 기준 이미 끝난 달(2026-08)의 고정값. 지난 달이라 "오늘" 과 무관하게 항상 같다
     private static final String CLOSED_MONTH = "2026-08";
@@ -99,5 +105,30 @@ class ExpenseReportApiTest {
                         .header("Authorization", "Bearer " + loginAndGetToken("demo2@fledge.dev")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.summary.totalExpense").value(776300));
+    }
+
+    @Test
+    void 예산이_설정된_달의_리포트에는_예산값이_채워진다() throws Exception {
+        String auth = "Bearer " + loginAndGetToken("demo1@fledge.dev");
+        mvc.perform(delete(BUDGET).param("month", BUDGET_LINKED_MONTH).header("Authorization", auth));
+
+        mvc.perform(put(BUDGET)
+                        .header("Authorization", auth)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"month":"%s","totalAmount":500000,
+                                 "categories":[{"category":"FOOD","amount":200000}]}
+                                """.formatted(BUDGET_LINKED_MONTH)))
+                .andExpect(status().isOk());
+
+        mvc.perform(get(REPORT).param("month", BUDGET_LINKED_MONTH).header("Authorization", auth))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.monthlyBudget").value(500000))
+                .andExpect(jsonPath("$.data.categories[1].category").value("FOOD"))
+                .andExpect(jsonPath("$.data.categories[1].budget").value(200000))
+                .andExpect(jsonPath("$.data.categories[0].category").value("HOUSING_UTILITY"))
+                .andExpect(jsonPath("$.data.categories[0].budget").value(Matchers.nullValue()));
+
+        mvc.perform(delete(BUDGET).param("month", BUDGET_LINKED_MONTH).header("Authorization", auth));
     }
 }

@@ -48,7 +48,11 @@ public enum ErrorCode {
     HOUSING_NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공고를 찾을 수 없습니다"),
     HOUSING_CHECKLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "체크리스트를 찾을 수 없습니다"),
     HOUSING_CHECKLIST_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "체크리스트 항목을 찾을 수 없습니다"),
-    HOUSING_CHECKLIST_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 같은 종류의 체크리스트가 있습니다");
+    HOUSING_CHECKLIST_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 같은 종류의 체크리스트가 있습니다"),
+
+    // budget — 생활비 예산
+    BUDGET_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 월의 예산을 찾을 수 없습니다"),
+    BUDGET_CATEGORY_SUM_EXCEEDS_TOTAL(HttpStatus.BAD_REQUEST, "카테고리별 예산 합계가 총예산을 초과했습니다");
 
     private final HttpStatus status;
     private final String message;

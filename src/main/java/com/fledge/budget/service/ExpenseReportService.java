@@ -2,6 +2,7 @@ package com.fledge.budget.service;
 
 import com.fledge.budget.domain.ExpenseCategory;
 import com.fledge.budget.domain.FinancialTransaction;
+import com.fledge.budget.domain.MonthlyBudget;
 import com.fledge.budget.dto.ExpenseReportResponse;
 import com.fledge.budget.dto.ExpenseReportResponse.CategoryBreakdown;
 import com.fledge.budget.dto.ExpenseReportResponse.MonthlyTrend;
@@ -10,6 +11,7 @@ import com.fledge.budget.dto.ExpenseReportResponse.Navigation;
 import com.fledge.budget.dto.ExpenseReportResponse.Summary;
 import com.fledge.budget.dto.ExpenseSummaryResponse;
 import com.fledge.budget.repository.FinancialTransactionRepository;
+import com.fledge.budget.repository.MonthlyBudgetRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class ExpenseReportService {
     private final FinancialTransactionRepository transactionRepository;
+    private final MonthlyBudgetRepository monthlyBudgetRepository;
 
     public ExpenseSummaryResponse getSummary(Long memberId) {
         LocalDate today = LocalDate.now();
@@ -64,9 +67,12 @@ public class ExpenseReportService {
         long averageExpense = Math.round(
                 monthPoints.stream().mapToLong(MonthPoint::totalExpense).average().orElse(0));
 
-        // c) 카테고리별 — 진행 중인 달이면 "1일~오늘" 같은 기간, 끝난 달이면 월 전체로 비교
+        // c) 카테고리별 — 이번 달(진행 중이면 1일~오늘)을 지난달 "전체"와 비교한다.
+        //    지난달 쪽을 같은 기간으로 잘라서 보여주면, 그 달이 지나고 나서 다시 보면
+        //    (이제는 "지난달"이 아니라 "이번 달"이 되어) 월 전체 합계로 바뀌어 같은 달인데 값이 달라 보인다.
+        //    그래서 지난달은 항상 월 전체로 고정한다. (expense-summary 의 "지난달 같은 기간" 비교와는 별개 — 그쪽은 그대로 둔다)
         LocalDate currentPeriodEnd = isCurrentMonth ? today : month.atEndOfMonth();
-        LocalDate prevPeriodEnd = isCurrentMonth ? today.minusMonths(1) : prevMonth.atEndOfMonth();
+        LocalDate prevPeriodEnd = prevMonth.atEndOfMonth();
 
         Map<ExpenseCategory, Long> currentByCategory = new EnumMap<>(ExpenseCategory.class);
         Map<ExpenseCategory, Long> previousByCategory = new EnumMap<>(ExpenseCategory.class);
@@ -76,12 +82,16 @@ public class ExpenseReportService {
         }
         long maxCurrent = currentByCategory.values().stream().mapToLong(Long::longValue).max().orElse(0);
 
+        // 예산 — 있으면 상단 요약·그래프 점선·카테고리 기준으로 쓰인다. 없으면 프론트가 월 평균/지난달로 대체한다.
+        MonthlyBudget budget = monthlyBudgetRepository.findByMemberIdAndBudgetMonth(memberId, month.atDay(1)).orElse(null);
+
         List<CategoryBreakdown> categories = new ArrayList<>();
         for (ExpenseCategory c : ExpenseCategory.values()) {
             long cur = currentByCategory.get(c);
             long prev = previousByCategory.get(c);
             int ratio = maxCurrent == 0 ? 0 : (int) Math.round(cur * 100.0 / maxCurrent);
-            categories.add(new CategoryBreakdown(c, cur, prev, cur - prev, ratio, null));
+            Long categoryBudget = budget == null ? null : budget.amountOf(c).orElse(null);
+            categories.add(new CategoryBreakdown(c, cur, prev, cur - prev, ratio, categoryBudget));
         }
 
         // d) 월 이동 가능 여부 — 이전 달은 이미 가져온 데이터 안에 포함되어 있어 필터링만
@@ -98,7 +108,7 @@ public class ExpenseReportService {
                 new MonthlyTrend(monthPoints, averageExpense),
                 categories,
                 new Navigation(hasPrevious, hasNext),
-                null
+                budget == null ? null : budget.getTotalAmount()
         );
     }
 }

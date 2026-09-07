@@ -12,7 +12,7 @@ KB IT's Your Life 해커톤 · 본선 2026.09.10~12
 | 빌드 | Gradle 9.7.1 (wrapper) |
 | DB | PostgreSQL 17 — 로컬은 Docker, 운영은 Supabase |
 | 스키마 관리 | Flyway (`src/main/resources/db/migration`) |
-| 외부 API | Gemini, 국토교통부 마이홈포털 |
+| 외부 API | Gemini, 국토교통부 마이홈포털, 정부24, 복지로, 온통청년 |
 
 ## 준비물
 
@@ -119,4 +119,15 @@ cp src/main/resources/application-secret.properties.example \
 패키지 구조 · API 규칙 · 커밋과 브랜치 규칙은 [`AGENTS.md`](./AGENTS.md) 에 있다.
 작업 전에 한 번 읽을 것.
 
-**아직 정하지 않은 것** — 인증 방식 (Supabase Auth vs 자체 JWT). 팀 논의 후 확정한다.
+## 현재 구현 상태
+
+2026-09-07 로컬 코드 기준이며, 실행·배포 검증 결과와는 구분한다.
+
+- 인증은 **Spring Security + JJWT 기반 자체 JWT**로 구현되어 있다. 비밀번호는 BCrypt로 저장한다.
+- `POST /api/v1/auth/login`에서 `{ token, member }`를 공통 응답의 `data`로 반환한다. 이후 `Authorization: Bearer <token>`으로 요청한다.
+- 회원·설문, 계좌·생활비·소비 리포트·지원 종료 예측, 지원금 매칭, 주거 공고·체크리스트, 금융 퀴즈·퍼즐·학습, 케어 API가 구현되어 있다.
+- 상담사 역할과 로그인용 시드는 있으나, 프론트 상담사 포털의 관리 데이터는 아직 모의 데이터다.
+- 시드는 `src/main/resources/db/seed/R__*.sql`에 여러 파일로 나뉘어 있으며 로컬·테스트 프로필에서 적용한다. 테스트는 별도 `fledge_test` DB를 사용한다.
+- 테스트 실행은 `./gradlew test`, 빌드와 테스트는 `./gradlew build`를 사용한다.
+
+API별 상세 계약은 위 Swagger 문서에서 확인한다.

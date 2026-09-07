@@ -27,6 +27,10 @@ public class Member {
     @Column(name = "password_hash")
     private String passwordHash;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MemberRole role;
+
     @Column(name = "birth_date")
     private LocalDate birthDate;
 

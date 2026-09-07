@@ -46,7 +46,19 @@ class AuthApiTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.token").isNotEmpty())
                 .andExpect(jsonPath("$.data.member.email").value("demo2@fledge.dev"))
+                .andExpect(jsonPath("$.data.member.role").value("YOUTH"))
                 .andExpect(jsonPath("$.data.member.tier").value("SELF_RELIANCE"));
+    }
+
+    @Test
+    void 상담사_로그인하면_role이_COUNSELOR다() throws Exception {
+        mvc.perform(post(LOGIN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("counselor@fledge.local", "counselor1234")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.member.email").value("counselor@fledge.local"))
+                .andExpect(jsonPath("$.data.member.role").value("COUNSELOR"))
+                .andExpect(jsonPath("$.data.member.memberId").value(3));
     }
 
     @Test

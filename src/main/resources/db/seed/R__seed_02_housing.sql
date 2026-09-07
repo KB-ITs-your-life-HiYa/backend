@@ -18,6 +18,11 @@
 -- 【날짜를 상대값으로 두는 이유】
 --   고정 날짜로 넣으면 시간이 지나면서 캘린더에서 사라진다.
 --   CURRENT_DATE 기준이면 언제 실행해도 이번 달에 보인다.
+--
+-- 【2026-09-07 재실행 메모】
+--   fledge_test DB에서 HousingNoticeWriterTest가 @Transactional 없이 deleteAll()을 호출해
+--   이 시드가 넣은 SEED-SR-00* 행이 지워진 채로 남아 있었다. R__ 마이그레이션은 체크섬이
+--   같으면 다시 실행되지 않으므로, 이 주석으로 체크섬을 바꿔 강제로 재실행되게 한다.
 
 DELETE FROM housing_notice_unit
  WHERE notice_id IN (SELECT id FROM housing_notice WHERE pblanc_id LIKE 'SEED-%');

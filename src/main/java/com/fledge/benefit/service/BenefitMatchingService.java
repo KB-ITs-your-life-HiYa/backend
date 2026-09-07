@@ -17,6 +17,7 @@ import com.fledge.member.domain.ProtectionStatus;
 import com.fledge.member.repository.MemberRepository;
 import com.fledge.member.repository.MemberSurveyRepository;
 import com.fledge.member.repository.MemberSurveyTagRepository;
+import com.fledge.region.service.RegionNameResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,6 +56,7 @@ public class BenefitMatchingService {
     private final SubsidyRepository subsidyRepository;
     private final SubsidyBenefitRepository subsidyBenefitRepository;
     private final SubsidyRegionRepository subsidyRegionRepository;
+    private final RegionNameResolver regionNameResolver;
 
     public List<CategoryMatchResponse> getMatches(Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow();
@@ -139,7 +142,12 @@ public class BenefitMatchingService {
                             ? r.getSigunguCode().equals(member.getRegionSigunguCode())
                             : r.getSidoCode().equals(member.getRegionCode()));
             if (!regionOk) return Optional.empty();
-            conditions.add(new MatchCondition("지역 조건", MatchStatus.MET));
+            String regionLabel = regions.stream()
+                    .map(r -> regionNameResolver.resolve(r.getSidoCode(), r.getSigunguCode()))
+                    .filter(name -> name != null)
+                    .collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new),
+                            names -> String.join("·", names)));
+            conditions.add(new MatchCondition("지역 조건(" + regionLabel + ")", MatchStatus.MET));
         }
 
         long needsReviewCount = conditions.stream().filter(c -> c.status() == MatchStatus.NEEDS_REVIEW).count();

@@ -15,9 +15,10 @@ public record MemberResponse(
         String tierLabel,
         Long daysUntilSupportEnd,
         LocalDate protectionEndDate,
-        String homeRegionCode
+        String homeRegionCode,
+        String regionName
 ) {
-    public static MemberResponse from(Member member) {
+    public static MemberResponse from(Member member, String regionName) {
         return new MemberResponse(
                 member.getId(),
                 member.getEmail(),
@@ -27,7 +28,8 @@ public record MemberResponse(
                 member.getEligibilityTier().getLabel(),
                 member.getDaysUntilSupportEnd(),
                 member.getProtectionEndDate(),
-                member.getHomeRegionCode()
+                member.getHomeRegionCode(),
+                regionName
         );
     }
 }

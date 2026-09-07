@@ -6,7 +6,7 @@ public record LoginResponse(
         String token,
         MemberResponse member
 ) {
-    public static LoginResponse of(Member member, String token) {
-        return new LoginResponse(token, MemberResponse.from(member));
+    public static LoginResponse of(Member member, String token, String regionName) {
+        return new LoginResponse(token, MemberResponse.from(member, regionName));
     }
 }

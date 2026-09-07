@@ -8,6 +8,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.transaction.BeforeTransaction;
+import org.springframework.test.context.transaction.AfterTransaction;
+import org.springframework.test.context.transaction.TestTransaction;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,14 +24,35 @@ import static org.assertj.core.api.Assertions.assertThat;
  * CI 에는 서비스 키가 없고, 공공 API 응답에 테스트가 좌우되면 안 된다.
  */
 @SpringBootTest
+@Transactional
 class HousingNoticeWriterTest {
 
     @Autowired HousingNoticeWriter writer;
     @Autowired HousingNoticeRepository noticeRepository;
     @Autowired HousingNoticeUnitRepository unitRepository;
 
+    @Autowired JdbcTemplate jdbc;
+    private List<String> noticesBefore;
+    private List<String> unitsBefore;
+
+    @BeforeTransaction
+    void rememberDatabase() {
+        noticesBefore = jdbc.queryForList("select row_to_json(n)::text from housing_notice n order by id", String.class);
+        unitsBefore = jdbc.queryForList("select row_to_json(u)::text from housing_notice_unit u order by id", String.class);
+    }
+
+    @AfterTransaction
+    void 삭제와_저장이_롤백되어_기존_공고가_보존된다() {
+        assertThat(jdbc.queryForList("select row_to_json(n)::text from housing_notice n order by id", String.class))
+                .containsExactlyElementsOf(noticesBefore);
+        assertThat(jdbc.queryForList("select row_to_json(u)::text from housing_notice_unit u order by id", String.class))
+                .containsExactlyElementsOf(unitsBefore);
+    }
+
     @BeforeEach
     void clean() {
+        // 롤백 보장이 빠지면 실제 삭제를 실행하기 전에 실패한다.
+        assertThat(TestTransaction.isActive()).isTrue();
         unitRepository.deleteAll();
         noticeRepository.deleteAll();
     }

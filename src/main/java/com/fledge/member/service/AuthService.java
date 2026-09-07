@@ -6,6 +6,7 @@ import com.fledge.member.domain.Member;
 import com.fledge.member.dto.LoginRequest;
 import com.fledge.member.dto.LoginResponse;
 import com.fledge.member.repository.MemberRepository;
+import com.fledge.region.service.RegionNameResolver;
 import com.fledge.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +20,7 @@ public class AuthService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RegionNameResolver regionNameResolver;
 
     public LoginResponse login(LoginRequest request) {
         Member member = memberRepository.findByEmail(request.email())
@@ -28,6 +30,7 @@ public class AuthService {
             throw new ApiException(ErrorCode.LOGIN_FAILED);
         }
 
-        return LoginResponse.of(member, jwtTokenProvider.createToken(member.getId()));
+        String regionName = regionNameResolver.resolve(member.getRegionCode(), member.getRegionSigunguCode());
+        return LoginResponse.of(member, jwtTokenProvider.createToken(member.getId()), regionName);
     }
 }

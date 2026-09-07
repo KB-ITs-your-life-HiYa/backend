@@ -4,6 +4,11 @@
 --   이 파일은 로컬 프로필에만 적용된다. Supabase 에는 들어가지 않는다.
 --   R__ 는 내용이 바뀌면 자동으로 다시 적용되므로, 여러 번 실행돼도 결과가 같아야 한다.
 --
+-- 【DELETE 를 쓰지 않는 이유】
+--   member 를 통째로 지우면 habit_puzzle_progress / habit_quiz_answer 처럼
+--   ON DELETE CASCADE 가 아닌 자식 테이블 FK 에 막혀 기동이 실패한다.
+--   데모 계정만 upsert 로 맞추면 다른 도메인 시드·로컬 진행 데이터를 보존한다.
+--
 -- 【시드 파일 나누기】
 --   도메인별로 파일을 나눈다. 한 파일에 여럿이 쓰면 충돌한다.
 --     R__seed_01_member.sql    회원          <- 이 파일
@@ -27,8 +32,6 @@
 --   프론트가 로그인 직후 자립청년 앱 대신 상담사 포털로 보낸다.
 --   birth_date/gender/region_code/protection_status 등은 자립청년 전용 필드라
 --   상담사에게는 의미가 없지만, 컬럼이 NOT NULL 이라 스키마를 만족시키는 값만 채운다.
-
-DELETE FROM member;
 
 -- region_sigungu_code 는 sigungu 테이블의 코드다. 이름으로 직접 안 쓰는 이유는
 -- '중구'처럼 여러 시/도에 중복되는 이름이 있어서다(#19).
@@ -69,7 +72,23 @@ INSERT INTO member (
  CURRENT_DATE - INTERVAL '35 years', 'FEMALE',
  '11', NULL,
  'IN_CARE', NULL, NULL, NULL,
- now() - INTERVAL '2 years');
+ now() - INTERVAL '2 years')
+ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    password_hash = EXCLUDED.password_hash,
+    role = EXCLUDED.role,
+    birth_date = EXCLUDED.birth_date,
+    gender = EXCLUDED.gender,
+    region_code = EXCLUDED.region_code,
+    region_sigungu_code = EXCLUDED.region_sigungu_code,
+    protection_status = EXCLUDED.protection_status,
+    protection_end_date = EXCLUDED.protection_end_date,
+    protection_type = EXCLUDED.protection_type,
+    home_region_code = EXCLUDED.home_region_code,
+    created_at = EXCLUDED.created_at;
 
 -- 시퀀스를 뒤로 밀어둔다. 이후 가입하는 회원이 1, 2, 3 과 충돌하지 않도록.
-SELECT setval('member_id_seq', 1000);
+SELECT setval(
+    'member_id_seq',
+    GREATEST((SELECT COALESCE(MAX(id), 1) FROM member), 1000)
+);

@@ -3,6 +3,7 @@
 -- 【규칙】
 --   이 파일은 로컬 프로필에만 적용된다. Supabase 에는 들어가지 않는다.
 --   R__ 는 내용이 바뀌면 자동으로 다시 적용되므로, 여러 번 실행돼도 결과가 같아야 한다.
+--   기존 거래의 ID를 유지해 완료된 생활비 주기의 거래 근거가 끊기지 않게 한다.
 --
 -- 【의존성】
 --   account, transaction 모두 member 를 FK 로 참조하므로 R__seed_01_member.sql 이후에 적용돼야 한다.
@@ -20,7 +21,13 @@
 INSERT INTO account (id, member_id, bank_name, account_type, balance, balance_updated_at) VALUES
                                                                                               (1, 1, 'KB국민 주거래 통장', 'DEPOSIT', 5487200, '2026-09-15 09:41:00+09'),
                                                                                               (2, 1, '신한 SOL 입출금',   'DEPOSIT', 1386200, '2026-09-15 09:41:00+09'),
-                                                                                              (3, 1, 'KB국민 자유적금', 'SAVINGS',  900000, '2026-09-15 09:41:00+09');
+                                                                                              (3, 1, 'KB국민 자유적금', 'SAVINGS',  900000, '2026-09-15 09:41:00+09')
+ON CONFLICT (id) DO UPDATE SET
+    bank_name = EXCLUDED.bank_name,
+    account_type = EXCLUDED.account_type,
+    balance = EXCLUDED.balance,
+    balance_updated_at = EXCLUDED.balance_updated_at
+WHERE account.member_id = EXCLUDED.member_id;
 
 SELECT setval('account_id_seq', 100, true);
 
@@ -30,8 +37,20 @@ SELECT setval('account_id_seq', 100, true);
 --   category = 'SAVINGS' 는 지출 집계에서 제외
 -- ---------------------------------------------------------------------
 
+-- 거래에는 외부 연동용 식별자가 아직 없다. 기존 행을 지웠다가 다시 넣으면
+-- money_cycle 의 완료 근거가 끊기므로, 자연키로 기존 행을 갱신하고 새 행만 추가한다.
+CREATE TEMP TABLE seed_demo1_transaction (
+    member_id BIGINT,
+    account_id BIGINT,
+    txn_date DATE,
+    txn_type VARCHAR(10),
+    amount BIGINT,
+    merchant_name VARCHAR(100),
+    category VARCHAR(20)
+) ON COMMIT DROP;
+
 -- 2026년 3월
-INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+INSERT INTO seed_demo1_transaction VALUES
                                                                                                          (1, 1, '2026-03-01', 'EXPENSE', 151300, 'LH 임대료',          'HOUSING_UTILITY'),
                                                                                                          (1, 2, '2026-03-02', 'EXPENSE',   7300, 'GS25',                'FOOD'),
                                                                                                          (1, 2, '2026-03-04', 'EXPENSE',  22400, '배달의민족',          'FOOD'),
@@ -68,7 +87,7 @@ INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merc
                                                                                                          (1, 2, '2026-03-31', 'EXPENSE',  13100, '이마트24',            'FOOD');
 
 -- 2026년 4월
-INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+INSERT INTO seed_demo1_transaction VALUES
                                                                                                          (1, 1, '2026-04-01', 'EXPENSE', 151300, 'LH 임대료',          'HOUSING_UTILITY'),
                                                                                                          (1, 2, '2026-04-02', 'EXPENSE',   8200, 'GS25',                'FOOD'),
                                                                                                          (1, 2, '2026-04-03', 'EXPENSE',  18900, '배달의민족',          'FOOD'),
@@ -102,7 +121,7 @@ INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merc
                                                                                                          (1, 2, '2026-04-30', 'EXPENSE',  12600, '이마트24',            'FOOD');
 
 -- 2026년 5월
-INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+INSERT INTO seed_demo1_transaction VALUES
                                                                                                          (1, 1, '2026-05-01', 'EXPENSE', 151300, 'LH 임대료',          'HOUSING_UTILITY'),
                                                                                                          (1, 2, '2026-05-02', 'EXPENSE',   7800, 'GS25',                'FOOD'),
                                                                                                          (1, 2, '2026-05-03', 'EXPENSE',  10300, '다이소',              'LIVING_MEDICAL'),
@@ -139,7 +158,7 @@ INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merc
                                                                                                          (1, 2, '2026-05-31', 'EXPENSE',  11500, '이마트24',            'FOOD');
 
 -- 2026년 6월
-INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+INSERT INTO seed_demo1_transaction VALUES
                                                                                                          (1, 1, '2026-06-01', 'EXPENSE', 151300, 'LH 임대료',          'HOUSING_UTILITY'),
                                                                                                          (1, 2, '2026-06-02', 'EXPENSE',   8600, 'GS25',                'FOOD'),
                                                                                                          (1, 2, '2026-06-03', 'EXPENSE',  12700, '다이소',              'LIVING_MEDICAL'),
@@ -171,7 +190,7 @@ INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merc
                                                                                                          (1, 2, '2026-06-27', 'EXPENSE',   9200, '다이소',              'LIVING_MEDICAL');
 
 -- 2026년 7월
-INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+INSERT INTO seed_demo1_transaction VALUES
                                                                                                          (1, 1, '2026-07-01', 'EXPENSE', 151300, 'LH 임대료',          'HOUSING_UTILITY'),
                                                                                                          (1, 2, '2026-07-02', 'EXPENSE',   8400, 'GS25',               'FOOD'),
                                                                                                          (1, 2, '2026-07-04', 'EXPENSE',  19500, '배달의민족',          'FOOD'),
@@ -210,7 +229,7 @@ INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merc
                                                                                                          (1, 2, '2026-07-31', 'EXPENSE',   5000, '다이소',              'LIVING_MEDICAL');
 
 -- 2026년 8월
-INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+INSERT INTO seed_demo1_transaction VALUES
                                                                                                          (1, 1, '2026-08-01', 'EXPENSE', 151300, 'LH 임대료',          'HOUSING_UTILITY'),
                                                                                                          (1, 2, '2026-08-03', 'EXPENSE',   7900, 'GS25',                'FOOD'),
                                                                                                          (1, 2, '2026-08-04', 'EXPENSE',  10700, '다이소',              'LIVING_MEDICAL'),
@@ -241,7 +260,7 @@ INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merc
                                                                                                          (1, 2, '2026-08-30', 'EXPENSE',   6200, 'GS25',                'FOOD');
 
 -- 2026년 9월 (1~15일, 자립수당 20일 입금분은 미반영)
-INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+INSERT INTO seed_demo1_transaction VALUES
                                                                                                          (1, 1, '2026-09-01', 'EXPENSE', 151300, 'LH 임대료',          'HOUSING_UTILITY'),
                                                                                                          (1, 2, '2026-09-02', 'EXPENSE',   8800, 'GS25',                'FOOD'),
                                                                                                          (1, 2, '2026-09-03', 'EXPENSE',   8700, '다이소',              'LIVING_MEDICAL'),
@@ -260,3 +279,27 @@ INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merc
                                                                                                          (1, 2, '2026-09-14', 'EXPENSE',  16400, '신전떡볶이',          'FOOD'),
                                                                                                          (1, 1, '2026-09-15', 'EXPENSE',  50000, 'KB국민 자유적금',     'SAVINGS'),
                                                                                                          (1, 2, '2026-09-15', 'EXPENSE',   8000, 'CU',                  'FOOD');
+
+UPDATE transaction existing
+SET amount = seeded.amount,
+    category = seeded.category
+FROM seed_demo1_transaction seeded
+WHERE existing.member_id = seeded.member_id
+  AND existing.account_id = seeded.account_id
+  AND existing.txn_date = seeded.txn_date
+  AND existing.txn_type = seeded.txn_type
+  AND existing.merchant_name IS NOT DISTINCT FROM seeded.merchant_name;
+
+INSERT INTO transaction (member_id, account_id, txn_date, txn_type, amount, merchant_name, category)
+SELECT seeded.member_id, seeded.account_id, seeded.txn_date, seeded.txn_type,
+       seeded.amount, seeded.merchant_name, seeded.category
+FROM seed_demo1_transaction seeded
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM transaction existing
+    WHERE existing.member_id = seeded.member_id
+      AND existing.account_id = seeded.account_id
+      AND existing.txn_date = seeded.txn_date
+      AND existing.txn_type = seeded.txn_type
+      AND existing.merchant_name IS NOT DISTINCT FROM seeded.merchant_name
+);

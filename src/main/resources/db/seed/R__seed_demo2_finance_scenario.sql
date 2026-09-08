@@ -10,7 +10,7 @@
 -- 9월 16~26일에는 수당 입금 외 추가 소비를 가정하지 않음.
 -- 원본의 시급/근무시간은 정책 사실로 검증하지 않고 거래 금액만 보존함.
 -- 시연 기준일은 서버 Clock 등에서 별도로 설정해야 함. 이 SQL은 서버 날짜를 변경하지 않음.
--- 09-23: 적금 D-Day, 0점 / 09-24: 적금 누락, 25점 / 09-26: 급여 누락 추가, 65점.
+-- 09-23: 공과금 D-Day, 0점 / 09-24: 공과금 누락, 35점 / 09-26: 급여 누락 추가, 75점.
 -- 10-01: 09-24 탐지 시각으로부터 7일 경과한 시각 이후 재확인.
 -- 10월에도 65점을 유지한다는 뜻은 아님: 새 월 고정비는 별도 예정/거래 처리가 필요함.
 -- 탐지는 반드시 txn_date <= 기준일 적용. 기존 OPEN 신호의 미해결 이전 월 사이클도 재확인.
@@ -43,7 +43,7 @@ INSERT INTO seed_demo2_schedule VALUES
   (204, 'IN',  'OTHER_REGULAR', '경기도청 자립수당',     500000, 20, '경기도청 자립수당'),
   (205, 'OUT', 'RENT',          'LH 임대료',             138700,  1, 'LH 임대료'),
   (206, 'OUT', 'TELECOM',       'KT알뜰폰',               29700,  5, 'KT알뜰폰'),
-  (207, 'OUT', 'UTILITY',       '한국전력·도시가스',       38900,  5, '한국전력·도시가스');
+  (207, 'OUT', 'UTILITY',       '한국전력·도시가스',       38900, 23, '한국전력·도시가스');
 -- 공과금 38,900원은 9월 기준. 과거 월 사이클을 생성할 경우 7월 44,200 / 8월 49,800 적용.
 -- 급여는 변동 금액이므로 예정금액 NULL, 거래처와 IN 방향으로 매칭.
 
@@ -288,7 +288,6 @@ INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, m
 
 INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
   (2, 11, '2026-09-01', 'EXPENSE', 138700, 'LH 임대료',         'HOUSING_UTILITY'),
-  (2, 11, '2026-09-05', 'EXPENSE',  38900, '한국전력·도시가스',  'HOUSING_UTILITY'),
   (2, 11, '2026-09-05', 'EXPENSE',  29700, 'KT알뜰폰',          'HOUSING_UTILITY'),
   (2, 11, '2026-09-10', 'EXPENSE',  58000, '티머니 충전',        'TRANSPORT'),
   (2, 11, '2026-09-15', 'EXPENSE',  50000, '우리 두근두근 행운적금', 'SAVINGS');
@@ -377,6 +376,9 @@ WHERE t.member_id = 2 AND (
     OR (t.account_id = 11 AND t.txn_date >= DATE '2026-09-01' AND t.txn_date < DATE '2026-10-01'
         AND ((t.merchant_name IN ('KB청년미래적금', 'KB국민 시연 정기적금') AND t.txn_type = 'EXPENSE')
           OR (t.merchant_name = '카페모디 급여' AND t.txn_type = 'INCOME')))
+    OR (t.account_id = 11 AND t.txn_date = DATE '2026-09-05'
+        AND t.txn_type = 'EXPENSE' AND t.amount = 38900
+        AND t.merchant_name = '한국전력·도시가스')
 );
 
 DO $references$
@@ -414,6 +416,10 @@ ON CONFLICT (id) DO UPDATE SET
     expected_amount = EXCLUDED.expected_amount, expected_day = EXCLUDED.expected_day,
     match_keyword = EXCLUDED.match_keyword, is_active = true, updated_at = now();
 
+-- 이번 데모는 공과금과 정기 소득 흐름만 보여주므로 적금 일정은 비활성화한다.
+UPDATE money_schedule SET is_active = false, updated_at = now()
+WHERE id = 201 AND member_id = 2;
+
 -- money_cycle / care_signal / care_response / referral_request 는 INSERT하지 않음.
 -- 모든 신규 사이클 및 상담 상태는 이후 애플리케이션이 생성함.
 
@@ -428,8 +434,8 @@ BEGIN
         RAISE EXCEPTION 'Expected account balance total 6636400';
     END IF;
     IF (SELECT count(*) FROM money_schedule m JOIN seed_demo2_schedule s ON s.id = m.id
-        WHERE m.member_id = 2 AND m.is_active) <> 7 THEN
-        RAISE EXCEPTION 'Expected seven active managed schedules';
+        WHERE m.member_id = 2 AND m.is_active AND m.id <> 201) <> 6 THEN
+        RAISE EXCEPTION 'Expected six active managed schedules for utility/income demo';
     END IF;
     IF EXISTS (
         SELECT 1 FROM seed_demo2_txn s
@@ -458,7 +464,7 @@ $verify$;
 -- 조회용 예상 결과: 현재 DB의 riskScore를 저장/변경하지 않음.
 -- 9월 시나리오만 검산. 실제 탐지 구현에서도 회원·방향·기준일을 함께 확인해야 함.
 WITH dates(as_of, expected_score) AS (
-    VALUES (DATE '2026-09-23', 0), (DATE '2026-09-24', 25), (DATE '2026-09-26', 65)
+    VALUES (DATE '2026-09-23', 0), (DATE '2026-09-24', 35), (DATE '2026-09-26', 75)
 ), state AS (
     SELECT d.as_of, d.expected_score, s.id, s.name, s.type,
            CASE WHEN EXISTS (
@@ -471,6 +477,7 @@ WITH dates(as_of, expected_score) AS (
            WHEN d.as_of > make_date(2026, 9, s.expected_day) THEN 'MISSED'
            ELSE 'PENDING' END AS projected_status
     FROM dates d CROSS JOIN seed_demo2_schedule s
+    WHERE s.id <> 201
 ), scores AS (
     SELECT as_of, expected_score,
            LEAST(100,

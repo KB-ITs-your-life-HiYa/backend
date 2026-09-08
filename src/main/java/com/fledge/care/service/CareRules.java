@@ -52,9 +52,9 @@ public final class CareRules {
 
     public static String prompt(String type) {
         return switch (type) {
-            case "MISSED_SAVING" -> "이번 달 적금 납입이 확인되지 않았어요. 현재 상황을 알려주세요.";
-            case "MISSED_PAYMENT" -> "이번 달 고정비 납부가 확인되지 않았어요. 현재 납부 상황을 알려주세요.";
-            default -> "이번 달 예정된 소득 입금이 확인되지 않았어요. 혹시 소득 상황에 변화가 있으신가요?";
+            case "MISSED_SAVING" -> "이번 달 적금 납입이 아직 확인되지 않았어요. 요즘 생활은 괜찮으신가요? 부담되는 일이 있다면 편하게 말씀해 주세요.";
+            case "MISSED_PAYMENT" -> "이번 달 공과금 납부가 아직 확인되지 않았어요. 최근 생활이 많이 버거우셨던 건 아닌지 걱정돼요. 괜찮으신가요?";
+            default -> "이번 달 예정된 소득 입금이 아직 확인되지 않았어요. 갑자기 생활비 걱정이 커지지는 않으셨을까요? 괜찮으신가요?";
         };
     }
 

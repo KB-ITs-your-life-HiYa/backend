@@ -116,7 +116,7 @@ class CareRuleFlowTest {
         var tm = Pattern.compile("\\(2,\\s*([0-9]+),\\s*'([0-9-]+)',\\s*'(EXPENSE|INCOME)',\\s*([0-9]+),\\s*'([^']+)',\\s*(NULL|'[^']+')\\)").matcher(sql);
         while (tm.find()) addTransaction(2L, LocalDate.parse(tm.group(2)), tm.group(3), Long.parseLong(tm.group(4)), tm.group(5));
         assertThat(scheduleRows).hasSize(7);
-        assertThat(txRows).hasSize(83);
+        assertThat(txRows).hasSize(201);
         assertThat(scheduleRows).filteredOn(s -> s.getId().equals(201L)).singleElement()
                 .extracting(MoneySchedule::getName, MoneySchedule::getMatchKeyword)
                 .containsExactly("KB청년미래적금", "KB청년미래적금");

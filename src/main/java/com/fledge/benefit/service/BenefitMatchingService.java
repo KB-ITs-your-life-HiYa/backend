@@ -11,10 +11,12 @@ import com.fledge.benefit.repository.SubsidyBenefitRepository;
 import com.fledge.benefit.repository.SubsidyRegionRepository;
 import com.fledge.benefit.repository.SubsidyRepository;
 import com.fledge.member.domain.Member;
+import com.fledge.member.domain.MemberSubsidy;
 import com.fledge.member.domain.MemberSurvey;
 import com.fledge.member.domain.MemberSurveyTag;
 import com.fledge.member.domain.ProtectionStatus;
 import com.fledge.member.repository.MemberRepository;
+import com.fledge.member.repository.MemberSubsidyRepository;
 import com.fledge.member.repository.MemberSurveyRepository;
 import com.fledge.member.repository.MemberSurveyTagRepository;
 import com.fledge.region.service.RegionNameResolver;
@@ -57,6 +59,7 @@ public class BenefitMatchingService {
     private final SubsidyBenefitRepository subsidyBenefitRepository;
     private final SubsidyRegionRepository subsidyRegionRepository;
     private final RegionNameResolver regionNameResolver;
+    private final MemberSubsidyRepository memberSubsidyRepository;
 
     public List<CategoryMatchResponse> getMatches(Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow();
@@ -64,8 +67,13 @@ public class BenefitMatchingService {
         Set<String> tags = memberSurveyTagRepository.findByMemberId(memberId).stream()
                 .map(MemberSurveyTag::getTag)
                 .collect(Collectors.toSet());
+        // 이미 받고 있는 지원금은 추천 목록에서 뺀다
+        Set<Long> receivingIds = memberSubsidyRepository.findByMemberId(memberId).stream()
+                .map(MemberSubsidy::getSubsidyId)
+                .collect(Collectors.toSet());
 
         List<SubsidyMatchResponse> matches = subsidyRepository.findAll().stream()
+                .filter(s -> !receivingIds.contains(s.getId()))
                 .map(s -> evaluate(s, member, survey, tags))
                 .flatMap(Optional::stream)
                 .toList();

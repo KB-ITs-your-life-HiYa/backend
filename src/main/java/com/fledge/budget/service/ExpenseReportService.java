@@ -54,15 +54,20 @@ public class ExpenseReportService {
         List<FinancialTransaction> txns = transactionRepository
                 .findByMemberIdAndTxnDateBetweenOrderByTxnDateAscIdAsc(memberId, fetchFrom, fetchTo);
 
-        // a) 해당 월 요약 — 항상 월 전체 범위 (진행 중인 달이어도 미래 거래가 없어 자연히 오늘까지만 잡힘)
-        long totalExpense = TransactionAggregator.sumExpense(txns, month.atDay(1), month.atEndOfMonth());
-        long totalIncome = TransactionAggregator.sumIncome(txns, month.atDay(1), month.atEndOfMonth());
+        // 진행 중인 달이면 오늘까지만, 이미 끝난 달이면 월 전체.
+        // 시드 등으로 미래 날짜 거래가 있을 수 있어 "미래 거래가 없다"는 가정에 기대지 않고 명시적으로 자른다.
+        LocalDate currentPeriodEnd = isCurrentMonth ? today : month.atEndOfMonth();
 
-        // b) 최근 3개월 그래프
+        // a) 해당 월 요약
+        long totalExpense = TransactionAggregator.sumExpense(txns, month.atDay(1), currentPeriodEnd);
+        long totalIncome = TransactionAggregator.sumIncome(txns, month.atDay(1), currentPeriodEnd);
+
+        // b) 최근 3개월 그래프 — 조회 중인 달 포인트는 위와 같은 기준(currentPeriodEnd)을 쓴다.
         List<MonthPoint> monthPoints = new ArrayList<>();
         for (int i = 2; i >= 0; i--) {
             YearMonth m = month.minusMonths(i);
-            monthPoints.add(new MonthPoint(m.toString(), TransactionAggregator.sumExpense(txns, m.atDay(1), m.atEndOfMonth())));
+            LocalDate pointEnd = m.equals(month) ? currentPeriodEnd : m.atEndOfMonth();
+            monthPoints.add(new MonthPoint(m.toString(), TransactionAggregator.sumExpense(txns, m.atDay(1), pointEnd)));
         }
         // 월 평균지출 — 조회 중인 달(month)은 아직 다 지나지 않았을 수 있어 평균에서 제외하고,
         // 나머지 달 중에서도 지출 데이터가 있는(totalExpense > 0) 달만으로 평균을 낸다.
@@ -78,7 +83,6 @@ public class ExpenseReportService {
         //    지난달 쪽을 같은 기간으로 잘라서 보여주면, 그 달이 지나고 나서 다시 보면
         //    (이제는 "지난달"이 아니라 "이번 달"이 되어) 월 전체 합계로 바뀌어 같은 달인데 값이 달라 보인다.
         //    그래서 지난달은 항상 월 전체로 고정한다. (expense-summary 의 "지난달 같은 기간" 비교와는 별개 — 그쪽은 그대로 둔다)
-        LocalDate currentPeriodEnd = isCurrentMonth ? today : month.atEndOfMonth();
         LocalDate prevPeriodEnd = prevMonth.atEndOfMonth();
 
         Map<ExpenseCategory, Long> currentByCategory = new EnumMap<>(ExpenseCategory.class);

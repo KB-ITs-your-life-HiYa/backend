@@ -85,6 +85,28 @@ class ExpenseReportApiTest {
     }
 
     @Test
+    void 진행_중인_달의_리포트는_지출_요약과_금액이_일치한다() throws Exception {
+        // expense-summary 는 원래부터 "오늘까지"만 집계한다. expense-report(진행 중인 달)도
+        // 같은 기준을 써야 하므로, 시드에 미래 날짜 거래가 섞여 있어도 두 값이 항상 같아야 한다.
+        String auth = "Bearer " + loginAndGetToken("demo1@fledge.dev");
+
+        String summaryResponse = mvc.perform(get(SUMMARY).header("Authorization", auth))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long summaryTotal = objectMapper.readTree(summaryResponse).path("data").path("currentMonthTotal").asLong();
+
+        String reportResponse = mvc.perform(get(REPORT).header("Authorization", auth))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode reportData = objectMapper.readTree(reportResponse).path("data");
+        long reportTotal = reportData.path("summary").path("totalExpense").asLong();
+        long lastTrendPoint = reportData.path("monthlyTrend").path("months").get(2).path("totalExpense").asLong();
+
+        assertThat(reportTotal).isEqualTo(summaryTotal);
+        assertThat(lastTrendPoint).isEqualTo(summaryTotal);
+    }
+
+    @Test
     void 잘못된_month이면_400() throws Exception {
         mvc.perform(get(REPORT).param("month", "nope")
                         .header("Authorization", "Bearer " + loginAndGetToken("demo1@fledge.dev")))

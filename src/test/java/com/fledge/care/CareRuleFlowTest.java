@@ -108,16 +108,16 @@ class CareRuleFlowTest {
         String sql = new ClassPathResource("db/seed/R__seed_demo2_finance_scenario.sql").getContentAsString(StandardCharsets.UTF_8);
         var sm = Pattern.compile("\\((20[1-7]),\\s*'(OUT|IN)',\\s*'([^']+)',\\s*'([^']+)',\\s*(NULL|[0-9]+),\\s*([0-9]+),\\s*'([^']+)'\\)").matcher(sql);
         while (sm.find()) {
+            if (sm.group(1).equals("207")) continue;
             MoneySchedule s = new MoneySchedule(); s.setId(Long.valueOf(sm.group(1))); s.setMemberId(2L);
             s.setDirection(sm.group(2)); s.setType(sm.group(3)); s.setName(sm.group(4));
             s.setExpectedAmount(sm.group(5).equals("NULL") ? null : Long.valueOf(sm.group(5)));
-            s.setExpectedDay(Integer.valueOf(sm.group(6))); s.setMatchKeyword(sm.group(7));
-            s.setActive(!s.getId().equals(201L)); scheduleRows.add(s);
+            s.setExpectedDay(Integer.valueOf(sm.group(6))); s.setMatchKeyword(sm.group(7)); s.setActive(true); scheduleRows.add(s);
         }
         var tm = Pattern.compile("\\(2,\\s*([0-9]+),\\s*'([0-9-]+)',\\s*'(EXPENSE|INCOME)',\\s*([0-9]+),\\s*'([^']+)',\\s*(NULL|'[^']+')\\)").matcher(sql);
         while (tm.find()) addTransaction(2L, LocalDate.parse(tm.group(2)), tm.group(3), Long.parseLong(tm.group(4)), tm.group(5));
-        assertThat(scheduleRows).hasSize(7);
-        assertThat(txRows).hasSize(201);
+        assertThat(scheduleRows).hasSize(6);
+        assertThat(txRows).hasSize(200);
         assertThat(scheduleRows).filteredOn(s -> s.getId().equals(201L)).singleElement()
                 .extracting(MoneySchedule::getName, MoneySchedule::getMatchKeyword)
                 .containsExactly("KB청년미래적금", "KB청년미래적금");

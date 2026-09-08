@@ -12,9 +12,10 @@ public record HousingNoticeSummary(
         String institution,
         TargetType targetType,
         LocalDate beginDate,
-        LocalDate endDate
+        LocalDate endDate,
+        HousingEligibilityResponse eligibility
 ) {
-    public static HousingNoticeSummary from(HousingNotice notice) {
+    public static HousingNoticeSummary from(HousingNotice notice, HousingEligibilityResponse eligibility) {
         return new HousingNoticeSummary(
                 notice.getId(),
                 notice.getPblancNm(),
@@ -22,7 +23,8 @@ public record HousingNoticeSummary(
                 notice.getSuplyInsttNm(),
                 notice.getTargetType(),
                 notice.getBeginDe(),
-                notice.getEndDe()
+                notice.getEndDe(),
+                eligibility
         );
     }
 }

@@ -1,0 +1,31 @@
+[ {
+  "title" : "대학생 근로장학금 지원",
+  "content" : "inqNum: 40882\nintrsThemaArray: 생활지원,교육\njurMnofNm: 교육부\njurOrgNm: 청년장학지원과\nlifeArray: 청년\nonapPsbltYn: N\nrprsCtadr: 1599-2290\nservDgst: 저소득층 대학생에게 근로 기회를 제공하고 그에 따른 대가(장학금)를 지급하여 안정적인 학업 여건을 조성합니다.\nservDtlLink: https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00001060&wlfareInfoReldBztpCd=01\nservNm: 대학생 근로장학금 지원\nsprtCycNm: 월\nsrvPvsnNm: 현금지급\nsvcfrstRegTs: 20210903\ntrgterIndvdlArray: 다문화·탈북민,다자녀,보훈대상자,장애인,저소득"
+}, {
+  "title" : "자립준비청년 자립수당 지급",
+  "content" : "inqNum: 602737\nintrsThemaArray: 생활지원\njurMnofNm: 보건복지부\njurOrgNm: 청년정책팀\nlifeArray: 청소년,청년\nonapPsbltYn: Y\nrprsCtadr: 129\nservDgst: 자립준비청년(보호종료아동)에게 자립수당을 지급하여 보호종료 후 경제적 부담을 완화하고 복지향상을 통해 안정적 사회정착 및 성공적 자립을 지원합니다.\nservDtlLink: https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00001175&wlfareInfoReldBztpCd=01\nservNm: 자립준비청년 자립수당 지급\nsprtCycNm: 월\nsrvPvsnNm: 현금지급\nsvcfrstRegTs: 20210903"
+}, {
+  "title" : "정신건강 심리상담 바우처사업",
+  "content" : "inqNum: 1632466\nintrsThemaArray: 정신건강\njurMnofNm: 보건복지부\njurOrgNm: 자살예방정책과\nlifeArray: 청소년,청년,중장년,노년\nonapPsbltYn: Y\nrprsCtadr: 129\nservDgst: 우울·불안 등 정서적 어려움으로 인해 심리상담이 필요한 국민에게 전문적인 심리상담 서비스를 제공합니다.\nservDtlLink: https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00005567&wlfareInfoReldBztpCd=01\nservNm: 정신건강 심리상담 바우처사업\nsprtCycNm: 년\nsrvPvsnNm: 전자바우처(바우처)\nsvcfrstRegTs: 20240626"
+}, {
+  "title" : "기존주택 전세임대주택 지원사업",
+  "content" : "inqNum: 53337\nintrsThemaArray: 주거\njurMnofNm: 국토교통부\njurOrgNm: 주거복지지원과\nonapPsbltYn: N\nrprsCtadr: 1600-1004\nservDgst: 도심 내 저소득층이 현 생활권에서 안정적으로 거주할 수 있도록 임대료가 저렴한 임대주택을 지원하여 주거안정을 도모합니다.\nservDtlLink: https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003269&wlfareInfoReldBztpCd=01\nservNm: 기존주택 전세임대주택 지원사업\nsprtCycNm: 수시\nsrvPvsnNm: 현물지급\nsvcfrstRegTs: 20210903\ntrgterIndvdlArray: 다자녀,장애인,저소득,한부모·조손"
+}, {
+  "title" : "자립지원 전담기관 운영",
+  "content" : "inqNum: 1651\nintrsThemaArray: 보호·돌봄\njurMnofNm: 보건복지부\njurOrgNm: 청년정책팀\nlifeArray: 아동,청소년,청년\nonapPsbltYn: N\nrprsCtadr: 129\nservDgst: 자립준비청년의 안정적인 자립 지원을 위해 자립준비청년대상 사후관리 및 자립지원 통합서비스 제공, 자립 교육을 지원합니다.\nservDtlLink: https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00006307&wlfareInfoReldBztpCd=01\nservNm: 자립지원 전담기관 운영\nsprtCycNm: 반기\nsrvPvsnNm: 프로그램/서비스(서비스),기타\nsvcfrstRegTs: 20260608"
+}, {
+  "title" : "성착취 피해 아동·청소년 퇴소자립지원수당",
+  "content" : "inqNum: 1278\nintrsThemaArray: 서민금융\njurMnofNm: 성평등가족부\njurOrgNm: 폭력예방교육과\nlifeArray: 아동,청소년\nonapPsbltYn: N\nrprsCtadr: 1388\nservDgst: 미성년 성착취 피해자에게 ‘퇴소 자립지원수당’을 지원, 성매매 재유입 방지 및 안정적 사회복귀 등 성공적 자립을 지원합니다.\nservDtlLink: https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00006302&wlfareInfoReldBztpCd=01\nservNm: 성착취 피해 아동·청소년 퇴소자립지원수당\nsprtCycNm: 월\nsrvPvsnNm: 현금지급\nsvcfrstRegTs: 20260605"
+}, {
+  "title" : "자립준비청년(보호종료아동) 자립정착금 지원",
+  "content" : "inqNum: 25728\nintrsThemaArray: 생활지원,입양·위탁,보호·돌봄\njurMnofNm: 보건복지부\njurOrgNm: 청년정책팀\nlifeArray: 청소년,청년\nonapPsbltYn: N\nrprsCtadr: 129\nservDgst: 아동복지시설 및 가정위탁보호아동이 퇴소 또는 위탁종료 시 경제적 지원을 통해 안정적인 사회정착을 도모합니다.\nservDtlLink: https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00005445&wlfareInfoReldBztpCd=01\nservNm: 자립준비청년(보호종료아동) 자립정착금 지원\nsprtCycNm: 1회성\nsrvPvsnNm: 현금지급\nsvcfrstRegTs: 20240521"
+}, {
+  "title" : "서민금융진흥원 금융교육",
+  "content" : "inqNum: 1987\njurMnofNm: 금융위원회\njurOrgNm: 서민금융과\nlifeArray: 청소년,청년,중장년,노년\nonapPsbltYn: N\nrprsCtadr: 1397\nservDgst: 서민·취약계층을 포함한 금융소비자가 금융역량을 강화하여 합리적인 금융의사결정을 하도록 지원합니다.\nservDtlLink: https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00006267&wlfareInfoReldBztpCd=01\nservNm: 서민금융진흥원 금융교육\nsprtCycNm: 수시\nsrvPvsnNm: 프로그램/서비스(서비스)\nsvcfrstRegTs: 20260506"
+}, {
+  "title" : "취업 후 상환 학자금대출",
+  "content" : "inqNum: 37711\nintrsThemaArray: 교육,서민금융\njurMnofNm: 교육부\njurOrgNm: 청년장학지원과\nlifeArray: 청년,중장년\nonapPsbltYn: N\nrprsCtadr: 1599-2000\nservDgst: 대학 학자금 마련에 어려움을 겪는 학생들에게 저리의 학자금대출을 지원하여 취업 후 일정기준의 소득이 발생한 때부터 상환할 수 있도록 합니다.\nservDtlLink: https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003277&wlfareInfoReldBztpCd=01\nservNm: 취업 후 상환 학자금대출\nsprtCycNm: 반기\nsrvPvsnNm: 현금대여(융자)\nsvcfrstRegTs: 20210903\ntrgterIndvdlArray: 저소득"
+}, {
+  "title" : "국가장학금(Ⅰ, Ⅱ유형)",
+  "content" : "inqNum: 23703\nintrsThemaArray: 교육\njurMnofNm: 교육부\njurOrgNm: 청년장학지원과\nonapPsbltYn: N\nrprsCtadr: 1599-2000\nservDgst: 누구나 경제적 여건에 관계없이 의지와 능력에 따라 대학교육의 기회를 가질 수 있도록 소득연계를 통한 대학 등록금을 차등 지원합니다.\nservDtlLink: https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003197&wlfareInfoReldBztpCd=01\nservNm: 국가장학금(Ⅰ, Ⅱ유형)\nsprtCycNm: 1회성\nsrvPvsnNm: 현금지급\nsvcfrstRegTs: 20210903\ntrgterIndvdlArray: 다자녀"
+} ]

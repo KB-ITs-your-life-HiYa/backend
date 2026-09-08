@@ -64,8 +64,15 @@ public class ExpenseReportService {
             YearMonth m = month.minusMonths(i);
             monthPoints.add(new MonthPoint(m.toString(), TransactionAggregator.sumExpense(txns, m.atDay(1), m.atEndOfMonth())));
         }
+        // 월 평균지출 — 조회 중인 달(month)은 아직 다 지나지 않았을 수 있어 평균에서 제외하고,
+        // 나머지 달 중에서도 지출 데이터가 있는(totalExpense > 0) 달만으로 평균을 낸다.
         long averageExpense = Math.round(
-                monthPoints.stream().mapToLong(MonthPoint::totalExpense).average().orElse(0));
+                monthPoints.stream()
+                        .filter(mp -> !mp.month().equals(month.toString()))
+                        .filter(mp -> mp.totalExpense() > 0)
+                        .mapToLong(MonthPoint::totalExpense)
+                        .average()
+                        .orElse(0));
 
         // c) 카테고리별 — 이번 달(진행 중이면 1일~오늘)을 지난달 "전체"와 비교한다.
         //    지난달 쪽을 같은 기간으로 잘라서 보여주면, 그 달이 지나고 나서 다시 보면

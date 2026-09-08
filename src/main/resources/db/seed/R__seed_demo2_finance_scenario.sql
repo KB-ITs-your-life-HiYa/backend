@@ -52,6 +52,160 @@ CREATE TEMP TABLE seed_demo2_txn (
     merchant_name varchar(100), category varchar(20)
 ) ON COMMIT DROP;
 
+-- 2026년 3월 (평상시: 모든 일정 정상 이행)
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 11, '2026-03-01', 'EXPENSE', 138700, 'LH 임대료',         'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-03-05', 'EXPENSE',  51300, '한국전력·도시가스',  'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-03-05', 'EXPENSE',  29700, 'KT알뜰폰',          'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-03-10', 'EXPENSE',  62000, '티머니 충전',        'TRANSPORT'),
+                                                                                                            (2, 11, '2026-03-15', 'EXPENSE',  50000, '우리 두근두근 행운적금', 'SAVINGS'),
+                                                                                                            (2, 11, '2026-03-18', 'EXPENSE',  80000, 'KB국민 자유적금',    'SAVINGS'),
+                                                                                                            (2, 11, '2026-03-20', 'INCOME',  500000, '경기도청 자립수당',  NULL),
+                                                                                                            (2, 11, '2026-03-25', 'INCOME',  398400, '카페모디 급여',      NULL);
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-03-02', 'EXPENSE',   8100, 'GS25',        'FOOD'),
+                                                                                                            (2, 12, '2026-03-04', 'EXPENSE',  19700, '배달의민족',  'FOOD'),
+                                                                                                            (2, 12, '2026-03-06', 'EXPENSE',  43800, '홈플러스',    'FOOD'),
+                                                                                                            (2, 12, '2026-03-09', 'EXPENSE',   8500, '김밥천국',    'FOOD'),
+                                                                                                            (2, 12, '2026-03-11', 'EXPENSE',  12300, '이마트24',    'FOOD'),
+                                                                                                            (2, 12, '2026-03-13', 'EXPENSE',  20600, '배달의민족',  'FOOD'),
+                                                                                                            (2, 12, '2026-03-16', 'EXPENSE',   7200, 'CU',          'FOOD'),
+                                                                                                            (2, 12, '2026-03-18', 'EXPENSE',  58900, '이마트',      'FOOD'),
+                                                                                                            (2, 12, '2026-03-21', 'EXPENSE',  22400, '배달의민족',  'FOOD'),
+                                                                                                            (2, 12, '2026-03-23', 'EXPENSE',  10800, '맘스터치',    'FOOD'),
+                                                                                                            (2, 12, '2026-03-26', 'EXPENSE',  46200, '홈플러스',    'FOOD'),
+                                                                                                            (2, 12, '2026-03-28', 'EXPENSE',  14900, '신전떡볶이',  'FOOD'),
+                                                                                                            (2, 12, '2026-03-30', 'EXPENSE',   8300, 'GS25',        'FOOD');
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-03-05', 'EXPENSE',   5300, '스타벅스',    'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-03-12', 'EXPENSE',  13500, '넷플릭스',    'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-03-17', 'EXPENSE',  14000, 'CGV',         'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-03-22', 'EXPENSE',  49700, '무신사',      'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-03-27', 'EXPENSE',  54300, '쿠팡',        'LEISURE_SHOPPING');
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-03-03', 'EXPENSE',  10900, '다이소',      'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-03-14', 'EXPENSE',  23100, '올리브영',    'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-03-24', 'EXPENSE',  21400, '쿠팡',        'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-03-29', 'EXPENSE',  12200, '다이소',      'LIVING_MEDICAL');
+
+-- 2026년 4월
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 11, '2026-04-01', 'EXPENSE', 138700, 'LH 임대료',         'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-04-05', 'EXPENSE',  40600, '한국전력·도시가스',  'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-04-05', 'EXPENSE',  29700, 'KT알뜰폰',          'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-04-10', 'EXPENSE',  58000, '티머니 충전',        'TRANSPORT'),
+                                                                                                            (2, 11, '2026-04-15', 'EXPENSE',  50000, '우리 두근두근 행운적금', 'SAVINGS'),
+                                                                                                            (2, 11, '2026-04-21', 'EXPENSE',  50000, 'KB국민 자유적금',    'SAVINGS'),
+                                                                                                            (2, 11, '2026-04-20', 'INCOME',  500000, '경기도청 자립수당',  NULL),
+                                                                                                            (2, 11, '2026-04-25', 'INCOME',  372000, '카페모디 급여',      NULL);
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-04-02', 'EXPENSE',   7600, 'GS25',        'FOOD'),
+                                                                                                            (2, 12, '2026-04-05', 'EXPENSE',  45400, '홈플러스',    'FOOD'),
+                                                                                                            (2, 12, '2026-04-07', 'EXPENSE',   9000, '김밥천국',    'FOOD'),
+                                                                                                            (2, 12, '2026-04-09', 'EXPENSE',  21200, '배달의민족',  'FOOD'),
+                                                                                                            (2, 12, '2026-04-12', 'EXPENSE',  11500, '이마트24',    'FOOD'),
+                                                                                                            (2, 12, '2026-04-14', 'EXPENSE',  13800, '신전떡볶이',  'FOOD'),
+                                                                                                            (2, 12, '2026-04-16', 'EXPENSE',   7900, 'CU',          'FOOD'),
+                                                                                                            (2, 12, '2026-04-19', 'EXPENSE',  61300, '이마트',      'FOOD'),
+                                                                                                            (2, 12, '2026-04-22', 'EXPENSE',  20400, '배달의민족',  'FOOD'),
+                                                                                                            (2, 12, '2026-04-24', 'EXPENSE',  11200, '맘스터치',    'FOOD'),
+                                                                                                            (2, 12, '2026-04-27', 'EXPENSE',  44600, '홈플러스',    'FOOD'),
+                                                                                                            (2, 12, '2026-04-29', 'EXPENSE',  23100, '배달의민족',  'FOOD');
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-04-04', 'EXPENSE',   5700, '스타벅스',    'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-04-11', 'EXPENSE',  13500, '넷플릭스',    'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-04-18', 'EXPENSE',  43200, '무신사',      'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-04-23', 'EXPENSE',  14000, 'CGV',         'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-04-28', 'EXPENSE',  47800, '쿠팡',        'LEISURE_SHOPPING');
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-04-06', 'EXPENSE',  11700, '다이소',      'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-04-13', 'EXPENSE',  20800, '올리브영',    'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-04-20', 'EXPENSE',  18300, '쿠팡',        'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-04-30', 'EXPENSE',   9400, '다이소',      'LIVING_MEDICAL');
+
+-- 2026년 5월
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 11, '2026-05-01', 'EXPENSE', 138700, 'LH 임대료',         'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-05-05', 'EXPENSE',  36400, '한국전력·도시가스',  'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-05-05', 'EXPENSE',  29700, 'KT알뜰폰',          'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-05-10', 'EXPENSE',  60000, '티머니 충전',        'TRANSPORT'),
+                                                                                                            (2, 11, '2026-05-15', 'EXPENSE',  50000, '우리 두근두근 행운적금', 'SAVINGS'),
+                                                                                                            (2, 11, '2026-05-19', 'EXPENSE', 100000, 'KB국민 자유적금',    'SAVINGS'),
+                                                                                                            (2, 11, '2026-05-20', 'INCOME',  500000, '경기도청 자립수당',  NULL),
+                                                                                                            (2, 11, '2026-05-25', 'INCOME',  415200, '카페모디 급여',      NULL);
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-05-02', 'EXPENSE',   8800, 'GS25',        'FOOD'),
+                                                                                                            (2, 12, '2026-05-04', 'EXPENSE',  18900, '배달의민족',  'FOOD'),
+                                                                                                            (2, 12, '2026-05-06', 'EXPENSE',  47100, '홈플러스',    'FOOD'),
+                                                                                                            (2, 12, '2026-05-08', 'EXPENSE',   8500, '김밥천국',    'FOOD'),
+                                                                                                            (2, 12, '2026-05-11', 'EXPENSE',  12600, '이마트24',    'FOOD'),
+                                                                                                            (2, 12, '2026-05-13', 'EXPENSE',  22800, '배달의민족',  'FOOD'),
+                                                                                                            (2, 12, '2026-05-15', 'EXPENSE',   9000, '용현동백반',  'FOOD'),
+                                                                                                            (2, 12, '2026-05-17', 'EXPENSE',   7100, 'CU',          'FOOD'),
+                                                                                                            (2, 12, '2026-05-20', 'EXPENSE',  56400, '이마트',      'FOOD'),
+                                                                                                            (2, 12, '2026-05-22', 'EXPENSE',  19600, '배달의민족',  'FOOD'),
+                                                                                                            (2, 12, '2026-05-25', 'EXPENSE',  10400, '맘스터치',    'FOOD'),
+                                                                                                            (2, 12, '2026-05-27', 'EXPENSE',  49800, '홈플러스',    'FOOD'),
+                                                                                                            (2, 12, '2026-05-30', 'EXPENSE',   8600, 'GS25',        'FOOD');
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-05-05', 'EXPENSE',   5300, '스타벅스',    'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-05-12', 'EXPENSE',  13500, '넷플릭스',    'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-05-16', 'EXPENSE',  14000, 'CGV',         'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-05-21', 'EXPENSE',  51600, '무신사',      'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-05-28', 'EXPENSE',  43900, '쿠팡',        'LEISURE_SHOPPING');
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-05-03', 'EXPENSE',  12400, '다이소',      'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-05-14', 'EXPENSE',  21700, '올리브영',    'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-05-23', 'EXPENSE',  17800, '쿠팡',        'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-05-29', 'EXPENSE',   8900, '다이소',      'LIVING_MEDICAL');
+
+-- 2026년 6월
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 11, '2026-06-01', 'EXPENSE', 138700, 'LH 임대료',         'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-06-05', 'EXPENSE',  42800, '한국전력·도시가스',  'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-06-05', 'EXPENSE',  29700, 'KT알뜰폰',          'HOUSING_UTILITY'),
+                                                                                                            (2, 11, '2026-06-10', 'EXPENSE',  58000, '티머니 충전',        'TRANSPORT'),
+                                                                                                            (2, 11, '2026-06-15', 'EXPENSE',  50000, '우리 두근두근 행운적금', 'SAVINGS'),
+                                                                                                            (2, 11, '2026-06-22', 'EXPENSE', 100000, 'KB국민 자유적금',    'SAVINGS'),
+                                                                                                            (2, 11, '2026-06-20', 'INCOME',  500000, '경기도청 자립수당',  NULL),
+                                                                                                            (2, 11, '2026-06-25', 'INCOME',  386400, '카페모디 급여',      NULL);
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-06-02', 'EXPENSE',   7900, 'GS25',        'FOOD'),
+                                                                                                            (2, 12, '2026-06-05', 'EXPENSE',  42600, '홈플러스',    'FOOD'),
+                                                                                                            (2, 12, '2026-06-07', 'EXPENSE',   8700, '김밥천국',    'FOOD'),
+                                                                                                            (2, 12, '2026-06-09', 'EXPENSE',  20100, '배달의민족',  'FOOD'),
+                                                                                                            (2, 12, '2026-06-11', 'EXPENSE',  11900, '이마트24',    'FOOD'),
+                                                                                                            (2, 12, '2026-06-14', 'EXPENSE',  15200, '신전떡볶이',  'FOOD'),
+                                                                                                            (2, 12, '2026-06-16', 'EXPENSE',   7400, 'CU',          'FOOD'),
+                                                                                                            (2, 12, '2026-06-18', 'EXPENSE',  63800, '이마트',      'FOOD'),
+                                                                                                            (2, 12, '2026-06-21', 'EXPENSE',  21700, '배달의민족',  'FOOD'),
+                                                                                                            (2, 12, '2026-06-23', 'EXPENSE',  11000, '맘스터치',    'FOOD'),
+                                                                                                            (2, 12, '2026-06-26', 'EXPENSE',  46900, '홈플러스',    'FOOD'),
+                                                                                                            (2, 12, '2026-06-29', 'EXPENSE',  22300, '배달의민족',  'FOOD');
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-06-04', 'EXPENSE',   5700, '스타벅스',    'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-06-13', 'EXPENSE',  13500, '넷플릭스',    'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-06-17', 'EXPENSE',  46800, '무신사',      'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-06-20', 'EXPENSE',  14000, 'CGV',         'LEISURE_SHOPPING'),
+                                                                                                            (2, 12, '2026-06-27', 'EXPENSE',  52100, '쿠팡',        'LEISURE_SHOPPING');
+
+INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
+                                                                                                            (2, 12, '2026-06-06', 'EXPENSE',  10200, '다이소',      'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-06-12', 'EXPENSE',  24300, '올리브영',    'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-06-19', 'EXPENSE',  19600, '쿠팡',        'LIVING_MEDICAL'),
+                                                                                                            (2, 12, '2026-06-30', 'EXPENSE',  11800, '다이소',      'LIVING_MEDICAL');
+
 INSERT INTO seed_demo2_txn (member_id, account_id, txn_date, txn_type, amount, merchant_name, category) VALUES
   (2, 11, '2026-07-01', 'EXPENSE', 138700, 'LH 임대료',         'HOUSING_UTILITY'),
   (2, 11, '2026-07-05', 'EXPENSE',  44200, '한국전력·도시가스',  'HOUSING_UTILITY'),

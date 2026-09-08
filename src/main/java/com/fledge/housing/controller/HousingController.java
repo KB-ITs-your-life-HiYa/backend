@@ -45,7 +45,8 @@ public class HousingController {
                     값이 없는 필드는 null 이다. 정정으로 대체된 공고도 id 로 조회할 수 있다.
                     """)
     @GetMapping("/notices/{id}")
-    public ApiResponse<HousingNoticeDetailResponse> detail(@PathVariable Long id) {
-        return ApiResponse.ok(noticeService.findDetail(id));
+    public ApiResponse<HousingNoticeDetailResponse> detail(@PathVariable Long id,
+            @AuthenticationPrincipal AuthenticatedMember me) {
+        return ApiResponse.ok(noticeService.findDetail(id, me.id()));
     }
 }

@@ -34,6 +34,10 @@ public class HousingEligibilityProfileService {
         HousingEligibilityProfile profile = profileRepository.findById(memberId)
                 .orElseGet(() -> new HousingEligibilityProfile(memberId));
         profile.update(request.isHomeless(), request.isMarried());
+        // 구버전 프론트는 이 필드를 보내지 않는다. null로 기존 답변을 지우지 않는다.
+        if (request.youthPurchasePriorityBasis() != null) {
+            profile.updateYouthPurchasePriorityBasis(request.youthPurchasePriorityBasis());
+        }
         return HousingEligibilityProfileResponse.from(profileRepository.save(profile));
     }
 }

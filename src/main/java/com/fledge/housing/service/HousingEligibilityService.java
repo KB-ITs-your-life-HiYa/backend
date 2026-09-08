@@ -3,13 +3,16 @@ package com.fledge.housing.service;
 import com.fledge.common.ErrorCode;
 import com.fledge.exception.ApiException;
 import com.fledge.housing.domain.HousingEligibilityProfile;
+import com.fledge.housing.domain.HousingEligibilityRuleType;
 import com.fledge.housing.domain.HousingNotice;
 import com.fledge.housing.dto.HousingEligibilityResponse;
 import com.fledge.housing.repository.HousingEligibilityProfileRepository;
 import com.fledge.member.domain.Member;
 import com.fledge.member.domain.MemberRole;
 import com.fledge.member.domain.ProtectionStatus;
+import com.fledge.member.domain.MemberSurvey;
 import com.fledge.member.repository.MemberRepository;
+import com.fledge.member.repository.MemberSurveyRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,12 +29,20 @@ import static com.fledge.housing.domain.HousingEligibilityStatus.*;
 public class HousingEligibilityService {
     private final MemberRepository members;
     private final HousingEligibilityProfileRepository profiles;
+    private final MemberSurveyRepository surveys;
+    private final HousingEligibilityRuleResolver ruleResolver;
+    private final LhYouthPurchaseEligibilityRule youthPurchaseRule;
     private final boolean demoEnabled;
 
     public HousingEligibilityService(MemberRepository members, HousingEligibilityProfileRepository profiles,
+                                     MemberSurveyRepository surveys, HousingEligibilityRuleResolver ruleResolver,
+                                     LhYouthPurchaseEligibilityRule youthPurchaseRule,
                                      @Value("${housing.eligibility.demo-enabled:false}") boolean demoEnabled) {
         this.members = members;
         this.profiles = profiles;
+        this.surveys = surveys;
+        this.ruleResolver = ruleResolver;
+        this.youthPurchaseRule = youthPurchaseRule;
         this.demoEnabled = demoEnabled;
     }
 
@@ -40,26 +51,31 @@ public class HousingEligibilityService {
         Member member = members.findById(memberId)
                 .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
         return new Context(member, profiles.findById(memberId).orElse(null),
+                surveys.findById(memberId).orElse(null),
                 LocalDate.now(ZoneId.of("Asia/Seoul")));
     }
 
-    public record Context(Member member, HousingEligibilityProfile profile, LocalDate date) {}
+    public record Context(Member member, HousingEligibilityProfile profile, MemberSurvey survey, LocalDate date) {}
 
     public HousingEligibilityResponse evaluate(HousingNotice notice, Context context) {
         boolean lease = "SEED-SR-001".equals(notice.getPblancId());
         boolean purchase = "SEED-SR-002".equals(notice.getPblancId());
-        boolean demo = demoEnabled && (lease || purchase);
+        HousingEligibilityRuleType resolvedRule = ruleResolver.resolve(notice);
+        boolean demo = demoEnabled && resolvedRule == HousingEligibilityRuleType.SELF_RELIANCE_DEMO;
         if (notice.isSuperseded()) {
             return new HousingEligibilityResponse(NEEDS_CHECK, List.of("정정된 공고의 조건을 확인해주세요"),
-                    List.of(), context.date(), demo);
+                    List.of(), context.date(), demo, resolvedRule, null);
+        }
+        if (resolvedRule == HousingEligibilityRuleType.LH_YOUTH_PURCHASE) {
+            return youthPurchaseRule.evaluate(notice, context.member(), context.profile(), context.survey(), context.date());
         }
         if (!demo) {
             return new HousingEligibilityResponse(NEEDS_CHECK, List.of("공고별 신청 조건 확인이 필요해요"),
-                    List.of(), context.date(), false);
+                    List.of(), context.date(), false, HousingEligibilityRuleType.UNSUPPORTED, null);
         }
         if (context.member().getRole() != MemberRole.YOUTH) {
             return new HousingEligibilityResponse(NEEDS_CHECK, List.of("청년 회원의 자격 정보가 필요해요"),
-                    List.of(), context.date(), true);
+                    List.of(), context.date(), true, resolvedRule, null);
         }
 
         // 2025년 자립준비청년 전세임대(마이홈 17490)와 매입임대(17446) 조건을
@@ -96,12 +112,14 @@ public class HousingEligibilityService {
             checks.add("시설 퇴소 또는 가정위탁 보호종료 여부를 확인해주세요");
         }
         if (!failures.isEmpty()) {
-            return new HousingEligibilityResponse(NO_MATCH, List.copyOf(failures), List.copyOf(missing), context.date(), true);
+            return new HousingEligibilityResponse(NO_MATCH, List.copyOf(failures), List.copyOf(missing),
+                    context.date(), true, resolvedRule, null);
         }
         if (!checks.isEmpty()) {
-            return new HousingEligibilityResponse(NEEDS_CHECK, List.copyOf(checks), List.copyOf(missing), context.date(), true);
+            return new HousingEligibilityResponse(NEEDS_CHECK, List.copyOf(checks), List.copyOf(missing),
+                    context.date(), true, resolvedRule, null);
         }
         return new HousingEligibilityResponse(MATCH, List.of("입력한 정보가 데모 공고의 신청 조건을 충족해요"),
-                List.of(), context.date(), true);
+                List.of(), context.date(), true, resolvedRule, null);
     }
 }

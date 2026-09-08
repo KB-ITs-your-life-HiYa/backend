@@ -1,5 +1,6 @@
 package com.fledge.housing.dto;
 
+import com.fledge.housing.domain.YouthPurchasePriorityBasis;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
@@ -9,6 +10,8 @@ public record HousingEligibilityProfileRequest(
         Boolean isHomeless,
         @Schema(description = "현재 혼인 중이면 true")
         @NotNull(message = "혼인 여부를 선택해주세요")
-        Boolean isMarried
+        Boolean isMarried,
+        @Schema(description = "LH 청년 매입임대 1순위 근거. 미입력 시 기존 값을 유지")
+        YouthPurchasePriorityBasis youthPurchasePriorityBasis
 ) {
 }

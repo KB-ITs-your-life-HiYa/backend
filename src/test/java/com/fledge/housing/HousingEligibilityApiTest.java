@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fledge.housing.repository.HousingEligibilityProfileRepository;
 import com.fledge.housing.repository.HousingNoticeRepository;
+import com.fledge.housing.domain.HousingNotice;
+import com.fledge.housing.domain.TargetType;
 import com.fledge.security.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +70,33 @@ class HousingEligibilityApiTest {
         checkDetail(id, 2, "NEEDS_CHECK");
         save(false, false);
         checkDetail(id, 1, "NO_MATCH");
+    }
+
+    @Test
+    void 실제_lh_청년_매입임대는_공통조건과_일순위_근거를_판정한다() throws Exception {
+        HousingNotice notice = new HousingNotice("21147-TEST");
+        notice.update("[인천지역본부] 26년 6차 청년 매입임대주택 예비입주자 모집공고",
+                "LH", "다가구주택", "매입임대", TargetType.YOUTH, "공고중", null,
+                LocalDate.now(ZoneId.of("Asia/Seoul")), null, null, null,
+                "1600-1004", "https://apply.lh.or.kr", "https://www.myhome.go.kr");
+        long noticeId = notices.saveAndFlush(notice).getId();
+
+        mvc.perform(put("/api/v1/members/me/housing-eligibility")
+                        .header("Authorization", "Bearer " + tokens.createToken(1L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"isHomeless":true,"isMarried":false,
+                                 "youthPurchasePriorityBasis":"BENEFIT_RECIPIENT"}
+                                """))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/v1/housing/notices/{id}", noticeId)
+                        .header("Authorization", "Bearer " + tokens.createToken(1L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.eligibility.status").value("MATCH"))
+                .andExpect(jsonPath("$.data.eligibility.ruleType").value("LH_YOUTH_PURCHASE"))
+                .andExpect(jsonPath("$.data.eligibility.priority").value(1))
+                .andExpect(jsonPath("$.data.eligibility.demo").value(false));
     }
 
     private void save(boolean homeless, boolean married) throws Exception {

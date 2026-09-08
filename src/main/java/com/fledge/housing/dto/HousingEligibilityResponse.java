@@ -1,6 +1,7 @@
 package com.fledge.housing.dto;
 
 import com.fledge.housing.domain.HousingEligibilityStatus;
+import com.fledge.housing.domain.HousingEligibilityRuleType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -13,6 +14,10 @@ public record HousingEligibilityResponse(
         List<String> missingFields,
         LocalDate evaluatedOn,
         @Schema(description = "2025년 조건을 적용한 데모 공고 판정이면 true")
-        boolean demo
+        boolean demo,
+        @Schema(description = "판정에 사용한 규칙")
+        HousingEligibilityRuleType ruleType,
+        @Schema(description = "확인된 신청 순위. 아직 판정할 수 없으면 null")
+        Integer priority
 ) {
 }

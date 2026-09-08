@@ -2,6 +2,8 @@ package com.fledge.housing.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -25,6 +27,10 @@ public class HousingEligibilityProfile {
     @Column(name = "is_married", nullable = false)
     private boolean married;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "youth_purchase_priority_basis")
+    private YouthPurchasePriorityBasis youthPurchasePriorityBasis;
+
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
@@ -35,6 +41,11 @@ public class HousingEligibilityProfile {
     public void update(boolean homeless, boolean married) {
         this.homeless = homeless;
         this.married = married;
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public void updateYouthPurchasePriorityBasis(YouthPurchasePriorityBasis basis) {
+        this.youthPurchasePriorityBasis = basis;
         this.updatedAt = OffsetDateTime.now();
     }
 }

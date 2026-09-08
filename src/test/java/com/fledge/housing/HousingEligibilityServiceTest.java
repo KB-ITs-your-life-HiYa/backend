@@ -3,6 +3,8 @@ package com.fledge.housing;
 import com.fledge.housing.domain.HousingEligibilityProfile;
 import com.fledge.housing.domain.HousingNotice;
 import com.fledge.housing.service.HousingEligibilityService;
+import com.fledge.housing.service.HousingEligibilityRuleResolver;
+import com.fledge.housing.service.LhYouthPurchaseEligibilityRule;
 import com.fledge.member.domain.Member;
 import com.fledge.member.domain.MemberRole;
 import com.fledge.member.domain.ProtectionStatus;
@@ -19,7 +21,8 @@ import static org.mockito.Mockito.*;
 class HousingEligibilityServiceTest {
     private final LocalDate today = LocalDate.of(2026, 9, 8);
     private final Member member = mock(Member.class);
-    private final HousingEligibilityService service = new HousingEligibilityService(null, null, true);
+    private final HousingEligibilityService service = new HousingEligibilityService(
+            null, null, null, new HousingEligibilityRuleResolver(), new LhYouthPurchaseEligibilityRule(), true);
 
     @BeforeEach
     void member() {
@@ -35,7 +38,7 @@ class HousingEligibilityServiceTest {
             profile = new HousingEligibilityProfile(1L);
             profile.update(homeless, married);
         }
-        return new HousingEligibilityService.Context(member, profile, today);
+        return new HousingEligibilityService.Context(member, profile, null, today);
     }
 
     @Test void 모든_필수조건을_충족하면_match() {
@@ -85,7 +88,8 @@ class HousingEligibilityServiceTest {
         HousingNotice notice = new HousingNotice("SEED-SR-001");
         notice.markSuperseded();
         assertThat(service.evaluate(notice, context(true, false)).status()).isEqualTo(NEEDS_CHECK);
-        var disabled = new HousingEligibilityService(null, null, false);
+        var disabled = new HousingEligibilityService(
+                null, null, null, new HousingEligibilityRuleResolver(), new LhYouthPurchaseEligibilityRule(), false);
         var result = disabled.evaluate(new HousingNotice("SEED-SR-001"), context(true, false));
         assertThat(result.status()).isEqualTo(NEEDS_CHECK);
         assertThat(result.demo()).isFalse();

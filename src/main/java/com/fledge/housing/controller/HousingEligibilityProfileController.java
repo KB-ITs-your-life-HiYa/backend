@@ -26,7 +26,8 @@ public class HousingEligibilityProfileController {
         return ApiResponse.ok(service.findMe(me.id()));
     }
 
-    @Operation(summary = "내 주거 자격 정보 저장", description = "무주택·혼인 여부를 모두 입력한다. 기존 정보가 있으면 수정하며 미입력 상태를 임의로 채우지 않는다")
+    @Operation(summary = "내 주거 자격 정보 저장",
+            description = "무주택·혼인 여부는 필수다. LH 청년 매입임대 1순위 근거는 선택 입력하며, 생략하면 기존 값을 유지한다")
     @PutMapping
     public ApiResponse<HousingEligibilityProfileResponse> save(
             @AuthenticationPrincipal AuthenticatedMember me,

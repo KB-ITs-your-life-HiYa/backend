@@ -57,6 +57,7 @@ class HousingEligibilityProfileApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isHomeless").value(true))
                 .andExpect(jsonPath("$.data.isMarried").value(false))
+                .andExpect(jsonPath("$.data.youthPurchasePriorityBasis").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.data.updatedAt").isNotEmpty());
         profiles.flush();
         entityManager.clear();
@@ -75,6 +76,21 @@ class HousingEligibilityProfileApiTest {
         assertThat(stored.isHomeless()).isFalse();
         assertThat(stored.isMarried()).isTrue();
         assertThat(stored.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void 청년_매입임대_1순위_근거를_저장하고_구버전_요청에서도_보존한다() throws Exception {
+        mvc.perform(put(URL).header("Authorization", auth(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"isHomeless\":true,\"isMarried\":false,\"youthPurchasePriorityBasis\":\"NEAR_POVERTY\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.youthPurchasePriorityBasis").value("NEAR_POVERTY"));
+
+        mvc.perform(put(URL).header("Authorization", auth(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"isHomeless\":false,\"isMarried\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.youthPurchasePriorityBasis").value("NEAR_POVERTY"));
     }
 
     @Test

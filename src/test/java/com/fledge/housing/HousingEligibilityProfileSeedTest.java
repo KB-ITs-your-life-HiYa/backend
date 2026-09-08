@@ -1,6 +1,7 @@
 package com.fledge.housing;
 
 import com.fledge.housing.repository.HousingEligibilityProfileRepository;
+import com.fledge.housing.domain.YouthPurchasePriorityBasis;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,6 +40,8 @@ class HousingEligibilityProfileSeedTest {
             assertThat(profile.isHomeless()).isTrue();
             assertThat(profile.isMarried()).isFalse();
         }
+        assertThat(profiles.findById(2L).orElseThrow().getYouthPurchasePriorityBasis())
+                .isEqualTo(YouthPurchasePriorityBasis.BENEFIT_RECIPIENT);
     }
 
     @Test
@@ -46,6 +49,7 @@ class HousingEligibilityProfileSeedTest {
         runSeed();
         var profile = profiles.findById(2L).orElseThrow();
         profile.update(false, true);
+        profile.updateYouthPurchasePriorityBasis(YouthPurchasePriorityBasis.NONE);
         profiles.flush();
 
         runSeed();
@@ -53,5 +57,6 @@ class HousingEligibilityProfileSeedTest {
         var saved = profiles.findById(2L).orElseThrow();
         assertThat(saved.isHomeless()).isFalse();
         assertThat(saved.isMarried()).isTrue();
+        assertThat(saved.getYouthPurchasePriorityBasis()).isEqualTo(YouthPurchasePriorityBasis.NONE);
     }
 }

@@ -39,6 +39,7 @@ public class HousingCalendarService {
     private final HousingNoticeUnitRepository unitRepository;
     private final MemberRepository memberRepository;
     private final SidoRepository sidoRepository;
+    private final HousingEligibilityService eligibilityService;
 
     public HousingCalendarResponse findByMonth(int year, int month, Long memberId, String regionCode) {
         // YearMonth.of 가 던지는 DateTimeException 은 아무도 안 잡아서 500 으로 샌다.
@@ -51,7 +52,8 @@ public class HousingCalendarService {
         LocalDate monthStart = target.atDay(1);
         LocalDate monthEnd = target.atEndOfMonth();
 
-        List<HousingNoticeSummary> all = findAllInMonth(monthStart, monthEnd);
+        HousingEligibilityService.Context context = eligibilityService.load(memberId);
+        List<HousingNoticeSummary> all = findAllInMonth(monthStart, monthEnd, context);
 
         // "ALL" 을 명시적으로 요청하면 필터 없이 전국을 보여준다
         if (NATIONWIDE.equals(regionCode)) {
@@ -82,11 +84,12 @@ public class HousingCalendarService {
         return toResponse(filtered, monthStart, monthEnd, effectiveCode, null);
     }
 
-    private List<HousingNoticeSummary> findAllInMonth(LocalDate monthStart, LocalDate monthEnd) {
+    private List<HousingNoticeSummary> findAllInMonth(LocalDate monthStart, LocalDate monthEnd,
+                                                     HousingEligibilityService.Context context) {
         return noticeRepository
                 .findBySupersededFalseAndBeginDeLessThanEqualAndEndDeGreaterThanEqual(monthEnd, monthStart)
                 .stream()
-                .map(HousingNoticeSummary::from)
+                .map(notice -> HousingNoticeSummary.from(notice, eligibilityService.evaluate(notice, context)))
                 .sorted(CALENDAR_ORDER)
                 .toList();
     }

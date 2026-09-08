@@ -21,8 +21,9 @@ public class HousingNoticeService {
 
     private final HousingNoticeRepository noticeRepository;
     private final HousingNoticeUnitRepository unitRepository;
+    private final HousingEligibilityService eligibilityService;
 
-    public HousingNoticeDetailResponse findDetail(Long noticeId) {
+    public HousingNoticeDetailResponse findDetail(Long noticeId, Long memberId) {
         HousingNotice notice = noticeRepository.findById(noticeId)
                 .orElseThrow(() -> new ApiException(ErrorCode.HOUSING_NOTICE_NOT_FOUND));
 
@@ -31,6 +32,7 @@ public class HousingNoticeService {
                 .map(HousingNoticeUnitResponse::from)
                 .toList();
 
-        return HousingNoticeDetailResponse.from(notice, units);
+        return HousingNoticeDetailResponse.from(notice, units,
+                eligibilityService.evaluate(notice, eligibilityService.load(memberId)));
     }
 }

@@ -8,6 +8,11 @@ import java.util.Optional;
 public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByEmail(String email);
 
+    // 같은 회원의 최초 자격 정보 저장 요청이 겹쳐도 PK 충돌 없이 순서대로 저장한다.
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select m from Member m where m.id = :id")
+    Optional<Member> lockForHousingEligibility(@org.springframework.data.repository.query.Param("id") Long id);
+
     // 회원별 케어 상태 변경을 직렬화하여 날짜 전환/버튼/탐지가 서로 덮어쓰지 않게 한다.
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select m from Member m where m.id = :id")

@@ -2,6 +2,7 @@ package com.fledge.member.service;
 
 import com.fledge.benefit.domain.Subsidy;
 import com.fledge.benefit.repository.SubsidyRepository;
+import com.fledge.benefit.service.SubsidyService;
 import com.fledge.common.ErrorCode;
 import com.fledge.exception.ApiException;
 import com.fledge.member.domain.MemberSubsidy;
@@ -21,14 +22,13 @@ public class MemberSubsidyService {
 
     private final MemberSubsidyRepository memberSubsidyRepository;
     private final SubsidyRepository subsidyRepository;
+    private final SubsidyService subsidyService;
 
     public List<SubsidySummaryResponse> findMine(Long memberId) {
         List<Long> subsidyIds = memberSubsidyRepository.findByMemberId(memberId).stream()
                 .map(MemberSubsidy::getSubsidyId)
                 .toList();
-        return subsidyRepository.findAllById(subsidyIds).stream()
-                .map(SubsidySummaryResponse::from)
-                .toList();
+        return subsidyService.summarize(subsidyRepository.findAllById(subsidyIds));
     }
 
     @Transactional

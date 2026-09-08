@@ -34,4 +34,10 @@ public final class CareDto {
     public record Summary(OffsetDateTime asOf, boolean demoEnabled, boolean hasSchedules,
                           int riskScore, String riskLevel, List<Cycle> cycles,
                           List<Reminder> reminders, List<Signal> signals) {}
+
+    // 지원금/독립지원/서비스 이용 관련 자유질문 RAG 챗봇 (com.fledge.care.rag). Care 상담과는 별개 경로다.
+    public record FaqAskRequest(@NotBlank @Size(max = 300) String question) {}
+    /** 근거로 쓰인 docs/rag 청크 출처. 프론트에서 "근거 문서" 카드로 보여준다. */
+    public record FaqSource(String docId, String title) {}
+    public record FaqAskResponse(String answer, boolean grounded, List<FaqSource> sources) {}
 }

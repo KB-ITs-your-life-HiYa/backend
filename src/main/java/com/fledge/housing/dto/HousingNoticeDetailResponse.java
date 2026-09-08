@@ -26,10 +26,12 @@ public record HousingNoticeDetailResponse(
         String applyUrl,
         String myhomeUrl,
         boolean superseded,
-        List<HousingNoticeUnitResponse> units
+        List<HousingNoticeUnitResponse> units,
+        HousingEligibilityResponse eligibility
 ) {
     public static HousingNoticeDetailResponse from(HousingNotice notice,
-                                                   List<HousingNoticeUnitResponse> units) {
+                                                   List<HousingNoticeUnitResponse> units,
+                                                   HousingEligibilityResponse eligibility) {
         return new HousingNoticeDetailResponse(
                 notice.getId(),
                 blankToNull(notice.getPblancNm()),
@@ -45,7 +47,8 @@ public record HousingNoticeDetailResponse(
                 blankToNull(notice.getUrl()),
                 blankToNull(notice.getPcUrl()),
                 notice.isSuperseded(),
-                units
+                units,
+                eligibility
         );
     }
 

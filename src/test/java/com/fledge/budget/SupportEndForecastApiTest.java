@@ -47,21 +47,21 @@ class SupportEndForecastApiTest {
 
     @Test
     void 종료가_임박하면_노출되고_계산값을_내려준다() throws Exception {
-        // demo2: D-180. 시드 데이터는 7·8월만 있고(9월은 진행 중이라 제외) 정확한 고정값으로 검증 가능.
-        // 서버 "오늘"이 2026년 9월인 동안만 유효 (완결된 달이 7·8월이 되는 전제). 10월로 넘어가면 8·9월로 바뀐다.
+        // demo2: D-180. 시드 데이터는 6·7·8월에 데이터가 있고(9월은 진행 중이라 제외) 정확한 고정값으로 검증 가능.
+        // 서버 "오늘"이 2026년 9월인 동안만 유효 (완결된 달이 6·7·8월이 되는 전제). 10월로 넘어가면 7·8·9월로 바뀐다.
         String response = mvc.perform(get(FORECAST).header("Authorization", "Bearer " + loginAndGetToken("demo2@fledge.dev")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.eligible").value(true))
-                .andExpect(jsonPath("$.data.forecast.monthsUsedForAverage").value(2))
+                .andExpect(jsonPath("$.data.forecast.monthsUsedForAverage").value(3))
                 .andExpect(jsonPath("$.data.forecast.dataAvailable").value(true))
                 .andExpect(jsonPath("$.data.forecast.currentSavingsTotal").value(3580000))
-                .andExpect(jsonPath("$.data.forecast.incomeExcludingAllowance").value(381840))
-                .andExpect(jsonPath("$.data.forecast.averageExpense").value(799950))
-                .andExpect(jsonPath("$.data.forecast.monthlyShortfall").value(418110))
+                .andExpect(jsonPath("$.data.forecast.incomeExcludingAllowance").value(383360))
+                .andExpect(jsonPath("$.data.forecast.averageExpense").value(782200))
+                .andExpect(jsonPath("$.data.forecast.monthlyShortfall").value(398840))
                 .andExpect(jsonPath("$.data.forecast.savingsRunwayMonths").value(8))
                 .andExpect(jsonPath("$.data.forecast.reduction.categories.length()").value(4))
-                .andExpect(jsonPath("$.data.forecast.reduction.totalMonthlySavings").value(58455))
-                .andExpect(jsonPath("$.data.forecast.reduction.totalSavingsByEnd").value(58455 * 6))
+                .andExpect(jsonPath("$.data.forecast.reduction.totalMonthlySavings").value(56820))
+                .andExpect(jsonPath("$.data.forecast.reduction.totalSavingsByEnd").value(56820 * 6))
                 .andExpect(jsonPath("$.data.forecast.reduction.improvedRunwayMonths").value(9))
                 .andReturn().getResponse().getContentAsString();
 

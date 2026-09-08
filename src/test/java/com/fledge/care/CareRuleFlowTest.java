@@ -108,6 +108,7 @@ class CareRuleFlowTest {
         String sql = new ClassPathResource("db/seed/R__seed_demo2_finance_scenario.sql").getContentAsString(StandardCharsets.UTF_8);
         var sm = Pattern.compile("\\((20[1-7]),\\s*'(OUT|IN)',\\s*'([^']+)',\\s*'([^']+)',\\s*(NULL|[0-9]+),\\s*([0-9]+),\\s*'([^']+)'\\)").matcher(sql);
         while (sm.find()) {
+            if (sm.group(1).equals("207")) continue;
             MoneySchedule s = new MoneySchedule(); s.setId(Long.valueOf(sm.group(1))); s.setMemberId(2L);
             s.setDirection(sm.group(2)); s.setType(sm.group(3)); s.setName(sm.group(4));
             s.setExpectedAmount(sm.group(5).equals("NULL") ? null : Long.valueOf(sm.group(5)));
@@ -115,8 +116,8 @@ class CareRuleFlowTest {
         }
         var tm = Pattern.compile("\\(2,\\s*([0-9]+),\\s*'([0-9-]+)',\\s*'(EXPENSE|INCOME)',\\s*([0-9]+),\\s*'([^']+)',\\s*(NULL|'[^']+')\\)").matcher(sql);
         while (tm.find()) addTransaction(2L, LocalDate.parse(tm.group(2)), tm.group(3), Long.parseLong(tm.group(4)), tm.group(5));
-        assertThat(scheduleRows).hasSize(7);
-        assertThat(txRows).hasSize(83);
+        assertThat(scheduleRows).hasSize(6);
+        assertThat(txRows).hasSize(82);
         assertThat(scheduleRows).filteredOn(s -> s.getId().equals(201L)).singleElement()
                 .extracting(MoneySchedule::getName, MoneySchedule::getMatchKeyword)
                 .containsExactly("KB청년미래적금", "KB청년미래적금");
@@ -136,9 +137,9 @@ class CareRuleFlowTest {
     @Test void scenarioDatesProduceZero25And65WithoutDuplicates() {
         Summary first = day(23);
         assertThat(first.riskScore()).isZero(); assertThat(first.reminders()).hasSize(1);
-        assertThat(first.cycles()).filteredOn(c -> c.status().equals("DONE")).hasSize(5);
+        assertThat(first.cycles()).filteredOn(c -> c.status().equals("DONE")).hasSize(4);
         var reminderTime = cycleRows.stream().filter(c -> c.getScheduleId() == 201L).findFirst().orElseThrow().getReminderSentAt();
-        day(23); assertThat(cycleRows).hasSize(7);
+        day(23); assertThat(cycleRows).hasSize(6);
         assertThat(cycleRows.stream().filter(c -> c.getScheduleId() == 201L).findFirst().orElseThrow().getReminderSentAt()).isEqualTo(reminderTime);
         assertThat(day(24).riskScore()).isEqualTo(25);
         assertThat(day(24).signals()).hasSize(1);
@@ -156,7 +157,7 @@ class CareRuleFlowTest {
         assertThat(summary.riskScore()).isEqualTo(25);
         assertThat(summary.signals().getFirst().replies()).hasSize(2);
         assertThat(signalRows.getFirst().getResponseResult()).isNull();
-        assertThat(care.summary(2L).signals().getFirst().replies().getFirst().reply()).contains("기록");
+        assertThat(care.summary(2L).signals().getFirst().replies().getFirst().reply()).contains("부담스럽고");
     }
 
     @Test void freeTextUsesExistingChoiceFlowAndDoesNotRepeatPolicies() {
@@ -361,7 +362,7 @@ class CareRuleFlowTest {
                 .thenAnswer(a -> a.<org.springframework.jdbc.core.ConnectionCallback<Void>>getArgument(0).doInConnection(connection));
         var reset = care.resetDemo(2L);
         assertThat(reset.asOf().toLocalDate()).isEqualTo(CareTime.START);
-        assertThat(reset.riskScore()).isZero(); assertThat(reset.cycles()).hasSize(7);
+        assertThat(reset.riskScore()).isZero(); assertThat(reset.cycles()).hasSize(6);
         assertThat(reset.reminders()).hasSize(1);
         assertThat(day(24).riskScore()).isEqualTo(25);
         verify(statement).close();

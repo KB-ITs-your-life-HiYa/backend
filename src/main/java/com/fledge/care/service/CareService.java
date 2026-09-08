@@ -79,15 +79,15 @@ public class CareService {
             case ALREADY_DONE -> {
                 boolean matched = moneyCycles.match(cycle, schedule, now);
                 reply = matched ? "실제 거래가 확인되어 이번 상담을 해결했어요."
-                        : "아직 거래 내역이 확인되지 않았어요. 확인될 때까지 이 상담을 유지할게요.";
+                        : "확인해주셔서 감사해요. 아직 거래 내역이 보이지 않아 조금 더 지켜볼게요.";
             }
             case DIFFICULT -> {
                 signal.setResponseResult("NEEDS_CARE");
-                reply = "현재 어려운 상황을 기록했어요. 무리하지 마시고, 상황이 바뀌면 다시 알려주세요.";
+                reply = "말씀해주셔서 감사해요. 지금 많이 부담스럽고 걱정되실 것 같아요. 무리하지 마시고, 필요한 도움을 함께 찾아볼게요.";
             }
             case LATER -> {
                 signal.setResponseResult(null);
-                reply = "알겠어요. 지금 상태는 유지하고, 필요할 때 다시 이야기할 수 있어요.";
+                reply = "네, 지금 바로 결정하지 않으셔도 괜찮아요. 마음이 조금 정리되거나 도움이 필요해지면 제가 그때도 함께 살펴볼게요.";
             }
             case CHANGED -> {
                 String changed = changeSchedule(schedule, request, now);
@@ -182,7 +182,7 @@ public class CareService {
                 MoneySchedule schedule = schedules.findByIdAndMemberId(cycle.getScheduleId(), memberId).orElseThrow();
                 boolean matched = moneyCycles.match(cycle, schedule, now);
                 reply = matched ? "실제 거래가 확인되어 이번 상담을 해결했어요."
-                        : "아직 거래 내역이 확인되지 않았어요. 확인될 때까지 이 상담을 유지할게요.";
+                        : "확인해주셔서 감사해요. 아직 거래 내역이 보이지 않아 조금 더 지켜볼게요.";
             }
             case DIFFICULT -> {
                 signal.setResponseResult("NEEDS_CARE");
@@ -374,8 +374,13 @@ public class CareService {
         List<Reminder> reminders = allCycles.stream()
                 .filter(c -> "PENDING".equals(c.getStatus()) && c.getExpectedDate().equals(now.toLocalDate())
                         && c.getReminderSentAt() != null)
-                .map(c -> new Reminder(c.getId(), "오늘은 " + scheduleById.get(c.getScheduleId()).getName()
-                        + " 납입·납부 예정일이에요. 아직 거래 내역이 확인되지 않았어요.")).toList();
+                .map(c -> {
+                    MoneySchedule schedule = scheduleById.get(c.getScheduleId());
+                    String action = "UTILITY".equals(schedule.getType()) ? "공과금 납부" :
+                            "SAVINGS".equals(schedule.getType()) ? "적금 납입" : "정기 입금";
+                    return new Reminder(c.getId(), "오늘은 이번 달 " + action
+                            + " 예정일이에요. 아직 거래 내역이 확인되지 않았어요.");
+                }).toList();
         List<Signal> signalViews = allSignals.stream().map(s -> {
             MoneyCycle c = cycleById.get(s.getMoneyCycleId());
             List<Option> options = CareRules.options(s.getSignalType());

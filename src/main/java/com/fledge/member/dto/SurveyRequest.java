@@ -25,7 +25,7 @@ public record SurveyRequest(
         String employmentStatus,
 
         @Schema(description = "주거 형태")
-        @Pattern(regexp = "OWNED|JEONSE|MONTHLY_RENT|FREE|SELF_RELIANCE_HOUSE|PUBLIC_RENTAL",
+        @Pattern(regexp = "OWNED|JEONSE|MONTHLY_RENT|FREE|SELF_RELIANCE_HOUSE|PUBLIC_RENTAL|UNSTABLE",
                 message = "올바르지 않은 주거 형태입니다")
         String housingType,
 

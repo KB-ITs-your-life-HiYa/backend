@@ -179,6 +179,7 @@ member_survey.income_pct_bracket
 member_survey.housing_type
   OWNED 자가 · JEONSE 전세 · MONTHLY_RENT 월세 · FREE 무상거주
   SELF_RELIANCE_HOUSE 자립생활관 · PUBLIC_RENTAL 공공임대
+  UNSTABLE 일시 거주 / 거처 불안정
 
 transaction.category
   HOUSING_UTILITY 주거공과금 · FOOD 식비 · TRANSPORT 교통

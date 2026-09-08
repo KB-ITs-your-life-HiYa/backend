@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,13 +68,23 @@ public class BenefitMatchingService {
         Set<String> tags = memberSurveyTagRepository.findByMemberId(memberId).stream()
                 .map(MemberSurveyTag::getTag)
                 .collect(Collectors.toSet());
-        // 이미 받고 있는 지원금은 추천 목록에서 뺀다
-        Set<Long> receivingIds = memberSubsidyRepository.findByMemberId(memberId).stream()
-                .map(MemberSubsidy::getSubsidyId)
+        // 이미 받고 있는 지원금은 추천 목록에서 뺀다. 같은 지원금이 지역별로 이름만 같은 채
+        // 여러 건 등록돼 있는 경우가 많아(예: 자립수당), ID뿐 아니라 이름이 같은 것도 함께 뺀다
+        List<Subsidy> receivingSubsidies = subsidyRepository.findAllById(
+                memberSubsidyRepository.findByMemberId(memberId).stream()
+                        .map(MemberSubsidy::getSubsidyId)
+                        .toList());
+        Set<String> receivingNames = receivingSubsidies.stream()
+                .map(Subsidy::getName)
                 .collect(Collectors.toSet());
 
-        List<SubsidyMatchResponse> matches = subsidyRepository.findAll().stream()
-                .filter(s -> !receivingIds.contains(s.getId()))
+        // 같은 이름 + 같은 지역(또는 둘 다 전국 단위)의 지원금이 여러 소스에서 중복 수집된 경우
+        // 하나로 묶는다. 서로 다른 지역은 실제로 다른 사람이 받는 별개 항목이라 남겨둔다
+        List<Subsidy> candidates = dedupeByNameAndRegion(subsidyRepository.findAll().stream()
+                .filter(s -> !receivingNames.contains(s.getName()))
+                .toList());
+
+        List<SubsidyMatchResponse> matches = candidates.stream()
                 .map(s -> evaluate(s, member, survey, tags))
                 .flatMap(Optional::stream)
                 .toList();
@@ -88,6 +99,29 @@ public class BenefitMatchingService {
                                 .toList()))
                 .filter(c -> !c.items().isEmpty())
                 .toList();
+    }
+
+    private List<Subsidy> dedupeByNameAndRegion(List<Subsidy> subsidies) {
+        Map<String, Subsidy> deduped = new LinkedHashMap<>();
+        for (Subsidy s : subsidies) {
+            String regionLabel = regionLabelOf(subsidyRegionRepository.findBySubsidy_Id(s.getId()));
+            String key = s.getName() + " " + (regionLabel == null ? "" : regionLabel);
+            Subsidy existing = deduped.get(key);
+            if (existing == null || (existing.getOrgName() == null && s.getOrgName() != null)) {
+                deduped.put(key, s);
+            }
+        }
+        return List.copyOf(deduped.values());
+    }
+
+    // SubsidyService.regionLabelOf와 같은 규칙: 지역 정보가 없으면 null(전국 단위)
+    private String regionLabelOf(List<SubsidyRegion> regions) {
+        if (regions.isEmpty()) return null;
+        return regions.stream()
+                .map(r -> regionNameResolver.resolve(r.getSidoCode(), r.getSigunguCode()))
+                .filter(name -> name != null)
+                .collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new),
+                        names -> names.isEmpty() ? null : String.join("·", names)));
     }
 
     private Optional<SubsidyMatchResponse> evaluate(Subsidy s, Member member, MemberSurvey survey, Set<String> tags) {
@@ -150,12 +184,7 @@ public class BenefitMatchingService {
                             ? r.getSigunguCode().equals(member.getRegionSigunguCode())
                             : r.getSidoCode().equals(member.getRegionCode()));
             if (!regionOk) return Optional.empty();
-            String regionLabel = regions.stream()
-                    .map(r -> regionNameResolver.resolve(r.getSidoCode(), r.getSigunguCode()))
-                    .filter(name -> name != null)
-                    .collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new),
-                            names -> String.join("·", names)));
-            conditions.add(new MatchCondition("지역 조건(" + regionLabel + ")", MatchStatus.MET));
+            conditions.add(new MatchCondition("지역 조건(" + regionLabelOf(regions) + ")", MatchStatus.MET));
         }
 
         long needsReviewCount = conditions.stream().filter(c -> c.status() == MatchStatus.NEEDS_REVIEW).count();

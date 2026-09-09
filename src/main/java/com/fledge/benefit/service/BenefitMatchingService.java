@@ -49,12 +49,14 @@ public class BenefitMatchingService {
     private static final List<String> SELF_RELIANCE_KEYWORDS =
             List.of("자립준비청년", "보호종료", "보호대상아동");
 
-    // 카테고리 안 정렬: 자립준비청년 전용 정책을 먼저, 그다음은 확인 필요 조건이 적은(더
-    // 확실하게 충족된) 순
+    // 카테고리 안 정렬: 자립준비청년 전용 정책을 먼저, 그다음은 충족 배지(초록)가 많은 순.
+    // 조건이 아예 없는 지원금(정보 없음)이 needsReviewCount 만으로는 "확인 필요 0개"라
+    // 충족 배지가 여러 개인 지원금보다 위로 올라가버리는 문제가 있어서, 충족 개수를
+    // 먼저 비교하고 확인 필요 개수는 동점자 tiebreaker 로만 쓴다
     private static final Comparator<SubsidyMatchResponse> CATEGORY_ITEM_ORDER =
             Comparator.<SubsidyMatchResponse>comparingInt(m -> isSelfRelianceSpecific(m.name()) ? 0 : 1)
-                    .thenComparingLong(SubsidyMatchResponse::needsReviewCount)
-                    .thenComparing(Comparator.comparingInt(BenefitMatchingService::metConditionCount).reversed());
+                    .thenComparing(Comparator.comparingInt(BenefitMatchingService::metConditionCount).reversed())
+                    .thenComparingLong(SubsidyMatchResponse::needsReviewCount);
 
     private static boolean isSelfRelianceSpecific(String name) {
         return SELF_RELIANCE_KEYWORDS.stream().anyMatch(name::contains);
@@ -70,8 +72,8 @@ public class BenefitMatchingService {
         return mentionsRecipient && !mixedTier;
     }
 
-    // 확인 필요 개수가 같으면(대부분 0), 초록 배지(충족)가 실제로 있는 걸 위로 올린다.
-    // 조건 자체가 하나도 없는 지원금(배지가 아예 안 뜨는 것)은 그 아래로 내려간다
+    // 충족 배지(초록) 개수. 조건 자체가 하나도 없는 지원금(배지가 아예 안 뜨는 것)은
+    // 0으로 계산되어 충족 배지가 있는 지원금들보다 아래로 내려간다
     private static int metConditionCount(SubsidyMatchResponse m) {
         return m.conditions().size() - (int) m.needsReviewCount();
     }

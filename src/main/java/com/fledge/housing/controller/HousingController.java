@@ -3,6 +3,7 @@ package com.fledge.housing.controller;
 import com.fledge.common.ApiResponse;
 import com.fledge.housing.dto.HousingCalendarResponse;
 import com.fledge.housing.dto.HousingNoticeDetailResponse;
+import com.fledge.housing.dto.RelatedNoticeSummary;
 import com.fledge.housing.service.HousingCalendarService;
 import com.fledge.housing.service.HousingNoticeService;
 import com.fledge.security.AuthenticatedMember;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Tag(name = "독립지원")
 @RestController
@@ -48,5 +51,12 @@ public class HousingController {
     public ApiResponse<HousingNoticeDetailResponse> detail(@PathVariable Long id,
             @AuthenticationPrincipal AuthenticatedMember me) {
         return ApiResponse.ok(noticeService.findDetail(id, me.id()));
+    }
+
+    @Operation(summary = "지원금과 관련된 공고 조회",
+            description = "지원금 이름에 공급유형(전세임대 등)이 들어있는, 자립준비청년 대상·접수중인 공고를 찾는다. 없으면 빈 배열")
+    @GetMapping("/notices/related-to-subsidy/{subsidyId}")
+    public ApiResponse<List<RelatedNoticeSummary>> relatedToSubsidy(@PathVariable Long subsidyId) {
+        return ApiResponse.ok(noticeService.findRelatedToSubsidy(subsidyId));
     }
 }

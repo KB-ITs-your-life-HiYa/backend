@@ -2,6 +2,8 @@ package com.fledge.budget;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fledge.budget.domain.FinancialTransaction;
+import com.fledge.budget.repository.FinancialTransactionRepository;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -33,8 +38,13 @@ class ExpenseReportApiTest {
     // demo1 시드 데이터 기준 이미 끝난 달(2026-08)의 고정값. 지난 달이라 "오늘" 과 무관하게 항상 같다
     private static final String CLOSED_MONTH = "2026-08";
 
+    // 코칭(저축여력) 테스트 전용 달. 다른 테스트의 고정값과 겹치지 않도록 멀리 떨어뜨려 둔다.
+    // 평균을 낼 이전 3개월(7~9월)에 30만원씩, 판정 대상 달(10월)에 20만원만 써서 -33% -> SURPLUS를 만든다.
+    private static final String SURPLUS_MONTH = "2028-11";
+
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired FinancialTransactionRepository transactionRepository;
 
     private String loginAndGetToken(String email) throws Exception {
         String response = mvc.perform(post(LOGIN)
@@ -104,6 +114,101 @@ class ExpenseReportApiTest {
 
         assertThat(reportTotal).isEqualTo(summaryTotal);
         assertThat(lastTrendPoint).isEqualTo(summaryTotal);
+    }
+
+    // --- 지출 코칭: 조회 중인 달이 아니라 그 전달(prevMonth) 지출을, prevMonth 이전 3개월
+    //     평균(prevMonth 자신은 제외)과 비교해 판정한다 ---
+
+    @Test
+    void 코칭_증감률이_20_초과면_적자_코칭을_내려준다() throws Exception {
+        // demo1: CLOSED_MONTH(2026-08)를 조회하면 그 전달인 2026-07 기준으로 판정한다.
+        // 평균(4~6월: 827,800 / 862,900 / 877,300)은 856,000. 7월 지출 1,032,400 -> 증감률 약 +20.6%.
+        // 6월 대비 7월 증가액: FOOD +100,800, LEISURE_SHOPPING +34,600 (가장 큰 두 카테고리).
+        mvc.perform(get(REPORT).param("month", CLOSED_MONTH)
+                        .header("Authorization", "Bearer " + loginAndGetToken("demo1@fledge.dev")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.coaching.tier").value("DEFICIT"))
+                .andExpect(jsonPath("$.data.coaching.changeRate").value(21))
+                .andExpect(jsonPath("$.data.coaching.savedAmount").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.coaching.excessAmount").value(176400))
+                .andExpect(jsonPath("$.data.coaching.surgeCategories.length()").value(2))
+                .andExpect(jsonPath("$.data.coaching.surgeCategories[0].category").value("FOOD"))
+                .andExpect(jsonPath("$.data.coaching.surgeCategories[0].increaseAmount").value(100800))
+                .andExpect(jsonPath("$.data.coaching.surgeCategories[1].category").value("LEISURE_SHOPPING"))
+                .andExpect(jsonPath("$.data.coaching.surgeCategories[1].increaseAmount").value(34600))
+                .andExpect(jsonPath("$.data.coaching.reductionTargetAmount").value(67700));
+    }
+
+    @Test
+    void 코칭_증감률이_10에서_20_사이면_주의_코칭을_내려준다() throws Exception {
+        // demo2: CLOSED_MONTH(2026-08)를 조회하면 그 전달인 2026-07 기준으로 판정한다.
+        // 평균(4~6월: 728,400 / 733,500 / 746,700)은 736,200. 7월 지출 823,600 -> 증감률 약 +11.9%.
+        // 6월 대비 7월 증가액이 가장 큰 카테고리는 FOOD(+38,900) 하나만 잡는다.
+        mvc.perform(get(REPORT).param("month", CLOSED_MONTH)
+                        .header("Authorization", "Bearer " + loginAndGetToken("demo2@fledge.dev")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.coaching.tier").value("CAUTION"))
+                .andExpect(jsonPath("$.data.coaching.changeRate").value(12))
+                .andExpect(jsonPath("$.data.coaching.surgeCategories.length()").value(1))
+                .andExpect(jsonPath("$.data.coaching.surgeCategories[0].category").value("FOOD"))
+                .andExpect(jsonPath("$.data.coaching.surgeCategories[0].increaseAmount").value(38900))
+                .andExpect(jsonPath("$.data.coaching.reductionTargetAmount").value(19450));
+    }
+
+    @Test
+    void 코칭_증감률이_10_이내면_코칭이_없다() throws Exception {
+        // demo2: 2026-07을 조회하면 그 전달인 2026-06 기준으로 판정한다.
+        // 평균(3~5월: 767,800 / 728,400 / 733,500)은 743,233.33. 6월 지출 746,700 -> 증감률 약 +0.5%(평소 수준) -> 코칭 없음
+        mvc.perform(get(REPORT).param("month", "2026-07")
+                        .header("Authorization", "Bearer " + loginAndGetToken("demo2@fledge.dev")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.coaching").value(Matchers.nullValue()));
+    }
+
+    @Test
+    void 코칭_평균을_낼_이전_달_데이터가_없으면_코칭이_없다() throws Exception {
+        // 시드 데이터는 2026-03부터 시작해서, 그 전달인 2026-02는 물론 평균을 낼 2025년 데이터도 없다 -> 판정 불가
+        mvc.perform(get(REPORT).param("month", "2026-03")
+                        .header("Authorization", "Bearer " + loginAndGetToken("demo1@fledge.dev")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.coaching").value(Matchers.nullValue()));
+    }
+
+    @Test
+    void 코칭_증감률이_마이너스_10_이하면_저축여력_코칭을_내려준다() throws Exception {
+        String auth = "Bearer " + loginAndGetToken("demo1@fledge.dev");
+        List<FinancialTransaction> inserted = List.of(
+                newTxn(1L, LocalDate.of(2028, 7, 15), "EXPENSE", 300000, "장보기", "FOOD"),
+                newTxn(1L, LocalDate.of(2028, 8, 15), "EXPENSE", 300000, "장보기", "FOOD"),
+                newTxn(1L, LocalDate.of(2028, 9, 15), "EXPENSE", 300000, "장보기", "FOOD"),
+                newTxn(1L, LocalDate.of(2028, 10, 15), "EXPENSE", 200000, "장보기", "FOOD")
+        );
+        transactionRepository.saveAll(inserted);
+        try {
+            // 평균(7~9월: 30만원씩) 300,000, 전달(10월) 지출 200,000 -> 증감률 -33% -> 저축여력, 적게 쓴 금액 100,000
+            mvc.perform(get(REPORT).param("month", SURPLUS_MONTH).header("Authorization", auth))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.coaching.tier").value("SURPLUS"))
+                    .andExpect(jsonPath("$.data.coaching.changeRate").value(-33))
+                    .andExpect(jsonPath("$.data.coaching.savedAmount").value(100000))
+                    .andExpect(jsonPath("$.data.coaching.excessAmount").value(Matchers.nullValue()))
+                    .andExpect(jsonPath("$.data.coaching.surgeCategories").isEmpty())
+                    .andExpect(jsonPath("$.data.coaching.reductionTargetAmount").value(Matchers.nullValue()));
+        } finally {
+            transactionRepository.deleteAllById(inserted.stream().map(FinancialTransaction::getId).toList());
+        }
+    }
+
+    private FinancialTransaction newTxn(long memberId, LocalDate date, String type, long amount, String merchant, String category) {
+        FinancialTransaction t = new FinancialTransaction();
+        t.setMemberId(memberId);
+        t.setAccountId(1L);
+        t.setTxnDate(date);
+        t.setTxnType(type);
+        t.setAmount(amount);
+        t.setMerchantName(merchant);
+        t.setCategory(category);
+        return t;
     }
 
     @Test

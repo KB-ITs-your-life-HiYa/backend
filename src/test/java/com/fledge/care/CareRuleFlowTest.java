@@ -130,10 +130,10 @@ class CareRuleFlowTest {
         assertThat(txRows).hasSize(200);
         assertThat(scheduleRows).filteredOn(s -> s.getId().equals(201L)).singleElement()
                 .extracting(MoneySchedule::getName, MoneySchedule::getMatchKeyword)
-                .containsExactly("KB청년미래적금", "KB청년미래적금");
+                .containsExactly("우리 두근두근 행운적금", "우리 두근두근 행운적금");
         assertThat(scheduleRows).filteredOn(s -> s.getId().equals(202L)).singleElement()
                 .extracting(MoneySchedule::getName, MoneySchedule::getMatchKeyword)
-                .containsExactly("우리 두근두근 행운적금", "우리 두근두근 행운적금");
+                .containsExactly("KB청년미래적금", "KB청년미래적금");
     }
 
     void addTransaction(long member, LocalDate date, String direction, long amount, String name) {
@@ -210,7 +210,7 @@ class CareRuleFlowTest {
         assertThat(unresolved.riskScore()).isEqualTo(25);
         assertThat(unresolved.signals().getFirst().status()).isEqualTo("OPEN");
 
-        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "KB청년미래적금");
+        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "우리 두근두근 행운적금");
         var paid = care.prepareFreeText(2L, 1L, new FreeTextRequest("거래를 다시 확인해 주세요", "free-done-2"));
         var resolved = care.completeFreeText(2L, 1L, paid.responseId(), Choice.ALREADY_DONE, "확인할게요.");
         assertThat(resolved.riskScore()).isZero();
@@ -235,7 +235,7 @@ class CareRuleFlowTest {
         var request = button(Choice.ALREADY_DONE, "retry-one");
         assertThat(care.respond(2L, 1L, request).riskScore()).isEqualTo(25);
         care.respond(2L, 1L, request); assertThat(responseRows).hasSize(1);
-        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "KB청년미래적금");
+        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "우리 두근두근 행운적금");
         var done = button(Choice.ALREADY_DONE, "confirmed");
         assertThat(care.respond(2L, 1L, done).riskScore()).isZero();
         care.respond(2L, 1L, done); assertThat(responseRows).hasSize(2);
@@ -310,7 +310,7 @@ class CareRuleFlowTest {
     }
 
     @Test void anotherMembersTransactionCannotResolveSignal() {
-        day(24); addTransaction(1L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "KB청년미래적금");
+        day(24); addTransaction(1L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "우리 두근두근 행운적금");
         assertThat(care.respond(2L, 1L, button(Choice.ALREADY_DONE, "wrong-owner")).riskScore()).isEqualTo(25);
         assertThatThrownBy(() -> care.respond(1L, 1L, button(Choice.DIFFICULT, "other")))
                 .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.CARE_SIGNAL_NOT_FOUND));
@@ -318,8 +318,8 @@ class CareRuleFlowTest {
     }
 
     @Test void futureOrWrongAmountTransactionCannotResolveToday() {
-        day(24); addTransaction(2L, LocalDate.of(2026, 9, 26), "EXPENSE", 200000, "KB청년미래적금");
-        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 100000, "KB청년미래적금");
+        day(24); addTransaction(2L, LocalDate.of(2026, 9, 26), "EXPENSE", 200000, "우리 두근두근 행운적금");
+        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 100000, "우리 두근두근 행운적금");
         assertThat(care.respond(2L, 1L, button(Choice.ALREADY_DONE, "future")).riskScore()).isEqualTo(25);
         assertThat(day(26).riskScore()).isEqualTo(40);
     }
@@ -327,9 +327,9 @@ class CareRuleFlowTest {
     @Test void oneTransactionCannotSatisfyTwoSchedules() {
         MoneySchedule duplicate = new MoneySchedule(); duplicate.setId(999L); duplicate.setMemberId(2L);
         duplicate.setActive(true); duplicate.setDirection("OUT"); duplicate.setType("SAVINGS"); duplicate.setName("별도 적금");
-        duplicate.setExpectedDay(23); duplicate.setExpectedAmount(200000L); duplicate.setMatchKeyword("KB청년미래적금");
+        duplicate.setExpectedDay(23); duplicate.setExpectedAmount(200000L); duplicate.setMatchKeyword("우리 두근두근 행운적금");
         scheduleRows.add(duplicate);
-        addTransaction(2L, LocalDate.of(2026, 9, 23), "EXPENSE", 200000, "KB청년미래적금");
+        addTransaction(2L, LocalDate.of(2026, 9, 23), "EXPENSE", 200000, "우리 두근두근 행운적금");
         assertThat(day(24).riskScore()).isEqualTo(25);
     }
 
@@ -404,7 +404,7 @@ class CareRuleFlowTest {
 
     @Test void resolvedSignalCannotReceiveNewReferral() {
         day(26);
-        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "KB청년미래적금");
+        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "우리 두근두근 행운적금");
         assertThatThrownBy(() -> care.requestReferral(2L, 1L)).isInstanceOf(ApiException.class);
         assertThat(referralRows).isEmpty();
     }
@@ -436,7 +436,7 @@ class CareRuleFlowTest {
 
     @Test void sevenDayRecheckResolvesBackfilledPaymentAndRecordsCheck() {
         day(24);
-        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "KB청년미래적금");
+        addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "우리 두근두근 행운적금");
         care.setDemoDate(2L, LocalDate.of(2026, 10, 1));
         var signal = care.summary(2L).signals().getFirst();
         assertThat(signal.status()).isEqualTo("RESOLVED");

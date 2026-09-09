@@ -7,6 +7,7 @@ import com.fledge.care.domain.*;
 import com.fledge.care.dto.CareDto.*;
 import com.fledge.care.repository.*;
 import com.fledge.common.ErrorCode;
+import com.fledge.counselor.repository.CounselorYouthAssignmentRepository;
 import com.fledge.exception.ApiException;
 import com.fledge.member.repository.MemberRepository;
 import com.fledge.member.domain.Member;
@@ -33,6 +34,7 @@ public class CareService {
                                     String scheduleName, LocalDate expectedDate, Long expectedAmount,
                                     String input, List<GeminiHistory> history) {}
     private final ReferralRequestRepository referrals;
+    private final CounselorYouthAssignmentRepository counselorAssignments;
     private final com.fasterxml.jackson.databind.ObjectMapper mapper;
     private final MemberRepository members;
     private final MoneyScheduleRepository schedules;
@@ -335,6 +337,9 @@ public class CareService {
         ReferralRequest request = new ReferralRequest();
         request.setMemberId(memberId);
         request.setCareSignalId(signalId);
+        request.setCounselorId(counselorAssignments.findActiveByYouthMemberId(memberId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CARE_COUNSELOR_NOT_ASSIGNED))
+                .getCounselorId());
         request.setStatus("REQUESTED");
         request.setReason(reason);
         request.setRiskScoreAtRequest(risk);

@@ -24,6 +24,10 @@ public class Member {
 
     private String email;
 
+    private String name;
+
+    private String phone;
+
     @Column(name = "password_hash")
     private String passwordHash;
 

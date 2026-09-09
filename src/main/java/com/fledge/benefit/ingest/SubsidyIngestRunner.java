@@ -14,7 +14,17 @@ import java.util.List;
 @Profile("ingest")
 public class SubsidyIngestRunner implements CommandLineRunner {
 
-    private static final String KEYWORD = "자립준비청년";
+    // "자립준비청년" 문구가 없어도 이 사용자들에게 맞을 만한 일반 청년 정책을 넓히기 위해 추가.
+    // 이미 있는 항목은 (source, externalId) 로 걸러지니 다시 돌려도 중복 저장되지 않는다
+    private static final List<String> KEYWORDS = List.of(
+            "자립준비청년",
+            "청년도약계좌",
+            "청년내일저축계좌",
+            "청년마음건강",
+            "청년월세",
+            "국민취업지원제도",
+            "국민내일배움카드"
+    );
 
     private final WelfareRawClient welfareRawClient;
     private final Gov24RawClient gov24RawClient;
@@ -33,9 +43,12 @@ public class SubsidyIngestRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        save("welfare", welfareRawClient.fetchList(KEYWORD, 1, 100));
-        save("gov24", gov24RawClient.fetchList(KEYWORD, 1, 100));
-        save("youthcenter", youthCenterRawClient.fetchList(KEYWORD, 1, 100));
+        for (String keyword : KEYWORDS) {
+            System.out.println("=== 키워드: " + keyword + " ===");
+            save("welfare", welfareRawClient.fetchList(keyword, 1, 100));
+            save("gov24", gov24RawClient.fetchList(keyword, 1, 100));
+            save("youthcenter", youthCenterRawClient.fetchList(keyword, 1, 100));
+        }
     }
 
     private void save(String source, List<RawSubsidy> records) {

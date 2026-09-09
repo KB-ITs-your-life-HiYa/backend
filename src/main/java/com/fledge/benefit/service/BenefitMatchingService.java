@@ -42,6 +42,42 @@ public class BenefitMatchingService {
     private static final List<String> CATEGORY_ORDER =
             List.of("생활안정", "주거자립", "교육", "취업", "금융", "보건의료", "보호돌봄");
 
+    // 카탈로그 초기 수집 때 "자립준비청년" 키워드로 찾은 항목은 대부분 이름에 이 단어들이
+    // 들어있다. 이후 청년도약계좌·청년월세 같은 일반 청년 정책을 추가로 모았는데, 그건
+    // 이 단어가 안 들어가 있어서 정확히 구분된다(원본 카탈로그 55건 중 47건이 이 패턴에
+    // 걸리고, 새로 모은 일반 청년 정책은 하나도 잘못 걸리지 않는 것을 직접 확인했다)
+    private static final List<String> SELF_RELIANCE_KEYWORDS =
+            List.of("자립준비청년", "보호종료", "보호대상아동");
+
+    // 카테고리 안 정렬: 자립준비청년 전용 정책을 먼저, 그다음은 충족 배지(초록)가 많은 순.
+    // 조건이 아예 없는 지원금(정보 없음)이 needsReviewCount 만으로는 "확인 필요 0개"라
+    // 충족 배지가 여러 개인 지원금보다 위로 올라가버리는 문제가 있어서, 충족 개수를
+    // 먼저 비교하고 확인 필요 개수는 동점자 tiebreaker 로만 쓴다
+    private static final Comparator<SubsidyMatchResponse> CATEGORY_ITEM_ORDER =
+            Comparator.<SubsidyMatchResponse>comparingInt(m -> isSelfRelianceSpecific(m.name()) ? 0 : 1)
+                    .thenComparing(Comparator.comparingInt(BenefitMatchingService::metConditionCount).reversed())
+                    .thenComparingLong(SubsidyMatchResponse::needsReviewCount);
+
+    private static boolean isSelfRelianceSpecific(String name) {
+        return SELF_RELIANCE_KEYWORDS.stream().anyMatch(name::contains);
+    }
+
+    // income_pct_max 같은 구조화된 소득 필드가 없는 지원금 중 이름에 "수급자"/"차상위"가
+    // 명시된 경우, 그 자체가 대상 조건이다(예: "자활근로(기초, 차상위)"). 다만 "초과"가
+    // 같이 들어가면(예: "차상위 이하, 초과 통합") 수급자가 아니어도 되는 트랙이 섞여있는
+    // 것이라 걸지 않는다
+    private static boolean requiresBenefitRecipient(String name) {
+        boolean mentionsRecipient = name.contains("수급자") || name.contains("차상위");
+        boolean mixedTier = name.contains("초과");
+        return mentionsRecipient && !mixedTier;
+    }
+
+    // 충족 배지(초록) 개수. 조건 자체가 하나도 없는 지원금(배지가 아예 안 뜨는 것)은
+    // 0으로 계산되어 충족 배지가 있는 지원금들보다 아래로 내려간다
+    private static int metConditionCount(SubsidyMatchResponse m) {
+        return m.conditions().size() - (int) m.needsReviewCount();
+    }
+
     // member_survey_tag 와 같은 어휘. "대상 특성" 조건에 사람이 읽을 수 있는 이름을 붙이는 용도
     private static final Map<String, String> TAG_LABELS = Map.of(
             "SINGLE_PARENT", "한부모",
@@ -78,16 +114,16 @@ public class BenefitMatchingService {
                 .map(Subsidy::getName)
                 .collect(Collectors.toSet());
 
-        // 같은 이름 + 같은 지역(또는 둘 다 전국 단위)의 지원금이 여러 소스에서 중복 수집된 경우
-        // 하나로 묶는다. 서로 다른 지역은 실제로 다른 사람이 받는 별개 항목이라 남겨둔다
-        List<Subsidy> candidates = dedupeByNameAndRegion(subsidyRepository.findAll().stream()
+        List<SubsidyMatchResponse> evaluated = subsidyRepository.findAll().stream()
                 .filter(s -> !receivingNames.contains(s.getName()))
-                .toList());
-
-        List<SubsidyMatchResponse> matches = candidates.stream()
                 .map(s -> evaluate(s, member, survey, tags))
                 .flatMap(Optional::stream)
                 .toList();
+
+        // 여기까지 살아남은 건 전부 이 회원 지역 조건을 이미 통과한 것들이라, 이름이 같으면
+        // (표기만 다른 중복 수집 포함) 지역을 어떻게 나눠서 등록했든 하나로 묶어도 된다 —
+        // 어차피 다 이 회원한테 적용되는 것들이라 지역별로 따로 보여줄 이유가 없다
+        List<SubsidyMatchResponse> matches = dedupeByName(evaluated);
 
         Map<String, List<SubsidyMatchResponse>> grouped = matches.stream()
                 .collect(Collectors.groupingBy(SubsidyMatchResponse::category));
@@ -95,23 +131,29 @@ public class BenefitMatchingService {
         return CATEGORY_ORDER.stream()
                 .map(cat -> new CategoryMatchResponse(cat,
                         grouped.getOrDefault(cat, List.of()).stream()
-                                .sorted(Comparator.comparingLong(SubsidyMatchResponse::needsReviewCount))
+                                .sorted(CATEGORY_ITEM_ORDER)
                                 .toList()))
                 .filter(c -> !c.items().isEmpty())
                 .toList();
     }
 
-    private List<Subsidy> dedupeByNameAndRegion(List<Subsidy> subsidies) {
-        Map<String, Subsidy> deduped = new LinkedHashMap<>();
-        for (Subsidy s : subsidies) {
-            String regionLabel = regionLabelOf(subsidyRegionRepository.findBySubsidy_Id(s.getId()));
-            String key = s.getName() + " " + (regionLabel == null ? "" : regionLabel);
-            Subsidy existing = deduped.get(key);
-            if (existing == null || (existing.getOrgName() == null && s.getOrgName() != null)) {
-                deduped.put(key, s);
+    private List<SubsidyMatchResponse> dedupeByName(List<SubsidyMatchResponse> matches) {
+        Map<String, SubsidyMatchResponse> deduped = new LinkedHashMap<>();
+        for (SubsidyMatchResponse m : matches) {
+            String key = SubsidyNameNormalizer.normalize(m.name());
+            SubsidyMatchResponse existing = deduped.get(key);
+            if (existing == null || isRicher(m, existing)) {
+                deduped.put(key, m);
             }
         }
         return List.copyOf(deduped.values());
+    }
+
+    // 기관명이 있는 쪽을 우선하고, 그다음은 확인 필요 조건이 더 적은(더 확실하게 충족된) 쪽을 우선한다
+    private boolean isRicher(SubsidyMatchResponse candidate, SubsidyMatchResponse existing) {
+        if (existing.orgName() == null && candidate.orgName() != null) return true;
+        if (existing.orgName() != null && candidate.orgName() == null) return false;
+        return candidate.needsReviewCount() < existing.needsReviewCount();
     }
 
     // SubsidyService.regionLabelOf와 같은 규칙: 지역 정보가 없으면 null(전국 단위)
@@ -122,6 +164,14 @@ public class BenefitMatchingService {
                 .filter(name -> name != null)
                 .collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new),
                         names -> names.isEmpty() ? null : String.join("·", names)));
+    }
+
+    // 지역이 3곳을 넘어가면(예: 구·군 단위로 잔뜩 걸린 경우) 배지에 다 나열하면 넘쳐서,
+    // 그때는 어느 지역인지 굳이 안 붙이고 "지역 조건"만 보여준다
+    private String regionConditionLabel(List<SubsidyRegion> regions) {
+        String label = regionLabelOf(regions);
+        if (label == null) return "지역 조건";
+        return label.split("·").length <= 2 ? "지역 조건(" + label + ")" : "지역 조건";
     }
 
     private Optional<SubsidyMatchResponse> evaluate(Subsidy s, Member member, MemberSurvey survey, Set<String> tags) {
@@ -169,6 +219,12 @@ public class BenefitMatchingService {
             conditions.add(new MatchCondition("소득 기준(금액)", MatchStatus.NEEDS_REVIEW));
         }
 
+        if (requiresBenefitRecipient(s.getName())) {
+            boolean isRecipient = survey != null && Boolean.TRUE.equals(survey.getIsBenefitRecipient());
+            if (!isRecipient) return Optional.empty();
+            conditions.add(new MatchCondition("기초생활수급자 요건", MatchStatus.MET));
+        }
+
         if (s.getTargetHousehold() != null && !s.getTargetHousehold().isEmpty()) {
             boolean hasAny = s.getTargetHousehold().stream().anyMatch(tags::contains);
             String targetLabel = s.getTargetHousehold().stream()
@@ -184,7 +240,7 @@ public class BenefitMatchingService {
                             ? r.getSigunguCode().equals(member.getRegionSigunguCode())
                             : r.getSidoCode().equals(member.getRegionCode()));
             if (!regionOk) return Optional.empty();
-            conditions.add(new MatchCondition("지역 조건(" + regionLabelOf(regions) + ")", MatchStatus.MET));
+            conditions.add(new MatchCondition(regionConditionLabel(regions), MatchStatus.MET));
         }
 
         long needsReviewCount = conditions.stream().filter(c -> c.status() == MatchStatus.NEEDS_REVIEW).count();

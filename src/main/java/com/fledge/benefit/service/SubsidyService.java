@@ -56,7 +56,7 @@ public class SubsidyService {
         for (Subsidy s : subsidies) {
             List<SubsidyRegion> regions = subsidyRegionRepository.findBySubsidy_Id(s.getId());
             String regionLabel = regionLabelOf(regions);
-            String key = s.getName() + " " + (regionLabel == null ? "" : regionLabel);
+            String key = SubsidyNameNormalizer.normalize(s.getName()) + " " + (regionLabel == null ? "" : regionLabel);
             Map.Entry<Subsidy, List<SubsidyRegion>> existing = deduped.get(key);
             if (existing == null || (existing.getKey().getOrgName() == null && s.getOrgName() != null)) {
                 deduped.put(key, new AbstractMap.SimpleEntry<>(s, regions));

@@ -19,4 +19,6 @@ public class ReferralRequest {
     private String reason;
     private Integer riskScoreAtRequest;
     private OffsetDateTime requestedAt;
+    private OffsetDateTime contactedAt;
+    private OffsetDateTime closedAt;
 }

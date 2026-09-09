@@ -8,6 +8,8 @@ import com.fledge.care.dto.CareDto.*;
 import com.fledge.care.repository.*;
 import com.fledge.care.service.*;
 import com.fledge.common.ErrorCode;
+import com.fledge.counselor.domain.CounselorYouthAssignment;
+import com.fledge.counselor.repository.CounselorYouthAssignmentRepository;
 import com.fledge.exception.ApiException;
 import com.fledge.member.domain.Member;
 import com.fledge.member.repository.MemberRepository;
@@ -40,6 +42,7 @@ class CareRuleFlowTest {
     MemberRepository members;
     JdbcTemplate jdbc;
     CareDemoStateRepository demo;
+    CounselorYouthAssignmentRepository counselorAssignments;
 
     @BeforeEach
     void fixture() throws Exception {
@@ -104,7 +107,14 @@ class CareRuleFlowTest {
         when(referrals.saveAndFlush(any())).thenAnswer(a -> {
             ReferralRequest r = a.getArgument(0); r.setId((long) referralRows.size() + 1); referralRows.add(r); return r;
         });
-        care = new CareService(referrals, new com.fasterxml.jackson.databind.ObjectMapper(), members, schedules, cycles, signals, responses, demo, money, time, jdbc, mock(EntityManager.class));
+        counselorAssignments = mock(CounselorYouthAssignmentRepository.class);
+        var assignment = new CounselorYouthAssignment();
+        assignment.setCounselorId(77L);
+        assignment.setYouthMemberId(2L);
+        when(counselorAssignments.findActiveByYouthMemberId(2L)).thenReturn(Optional.of(assignment));
+        care = new CareService(referrals, counselorAssignments, new com.fasterxml.jackson.databind.ObjectMapper(),
+                members, schedules, cycles, signals, responses, demo, money, time, jdbc,
+                mock(EntityManager.class));
         String sql = new ClassPathResource("db/seed/R__seed_demo2_finance_scenario.sql").getContentAsString(StandardCharsets.UTF_8);
         var sm = Pattern.compile("\\((20[1-7]),\\s*'(OUT|IN)',\\s*'([^']+)',\\s*'([^']+)',\\s*(NULL|[0-9]+),\\s*([0-9]+),\\s*'([^']+)'\\)").matcher(sql);
         while (sm.find()) {
@@ -388,7 +398,7 @@ class CareRuleFlowTest {
         assertThat(referralRows).hasSize(1);
         assertThat(referralRows.getFirst().getReason()).isEqualTo("HIGH_RISK");
         assertThat(referralRows.getFirst().getRiskScoreAtRequest()).isEqualTo(65);
-        assertThat(referralRows.getFirst().getCounselorId()).isNull();
+        assertThat(referralRows.getFirst().getCounselorId()).isEqualTo(77L);
         assertThatThrownBy(() -> care.requestReferral(1L, 2L)).isInstanceOf(ApiException.class);
     }
 
@@ -396,6 +406,17 @@ class CareRuleFlowTest {
         day(26);
         addTransaction(2L, LocalDate.of(2026, 9, 24), "EXPENSE", 200000, "KB청년미래적금");
         assertThatThrownBy(() -> care.requestReferral(2L, 1L)).isInstanceOf(ApiException.class);
+        assertThat(referralRows).isEmpty();
+    }
+
+    @Test void referralRequiresActiveCounselorAssignment() {
+        day(26);
+        when(counselorAssignments.findActiveByYouthMemberId(2L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> care.requestReferral(2L, 2L))
+                .isInstanceOfSatisfying(ApiException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(ErrorCode.CARE_COUNSELOR_NOT_ASSIGNED));
         assertThat(referralRows).isEmpty();
     }
 

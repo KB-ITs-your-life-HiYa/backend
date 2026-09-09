@@ -5,6 +5,9 @@ import com.fledge.budget.domain.FinancialTransaction;
 import com.fledge.budget.domain.MonthlyBudget;
 import com.fledge.budget.dto.ExpenseReportResponse;
 import com.fledge.budget.dto.ExpenseReportResponse.CategoryBreakdown;
+import com.fledge.budget.dto.ExpenseReportResponse.Coaching;
+import com.fledge.budget.dto.ExpenseReportResponse.Coaching.SurgeCategory;
+import com.fledge.budget.dto.ExpenseReportResponse.Coaching.Tier;
 import com.fledge.budget.dto.ExpenseReportResponse.MonthlyTrend;
 import com.fledge.budget.dto.ExpenseReportResponse.MonthlyTrend.MonthPoint;
 import com.fledge.budget.dto.ExpenseReportResponse.Navigation;
@@ -19,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +54,8 @@ public class ExpenseReportService {
         boolean isCurrentMonth = month.equals(YearMonth.now());
         YearMonth prevMonth = month.minusMonths(1);
 
-        LocalDate fetchFrom = month.minusMonths(2).atDay(1);
+        // 코칭용 평균은 prevMonth 이전 3개월(prevMonth-1~3)까지 봐야 해서 month-4까지 넉넉히 가져온다.
+        LocalDate fetchFrom = month.minusMonths(4).atDay(1);
         LocalDate fetchTo = month.atEndOfMonth();
         List<FinancialTransaction> txns = transactionRepository
                 .findByMemberIdAndTxnDateBetweenOrderByTxnDateAscIdAsc(memberId, fetchFrom, fetchTo);
@@ -113,13 +119,72 @@ public class ExpenseReportService {
                 .findByMemberIdAndTxnDateBetweenOrderByTxnDateAscIdAsc(memberId, nextMonth.atDay(1), nextMonth.atEndOfMonth())
                 .isEmpty();
 
+        // e) 지출 코칭 — 조회 중인 달(month)이 아니라 그 전달(prevMonth)의 지출을 판정한다.
+        //    급증 카테고리는 prevMonth 대 prevMonth의 전달(month-2) 증가액으로 잡는데, 마침 이미
+        //    fetch해둔 범위(month-4 ~ month)에 그대로 들어있어 추가 쿼리가 필요 없다.
+        long prevTotalExpense = TransactionAggregator.sumExpense(txns, prevMonth.atDay(1), prevPeriodEnd);
+        Coaching coaching = buildCoaching(txns, prevMonth, prevTotalExpense);
+
         return new ExpenseReportResponse(
                 month.toString(),
                 new Summary(totalExpense, totalIncome),
                 new MonthlyTrend(monthPoints, averageExpense),
                 categories,
                 new Navigation(hasPrevious, hasNext),
-                budget == null ? null : budget.getTotalAmount()
+                budget == null ? null : budget.getTotalAmount(),
+                coaching
         );
+    }
+
+    // 저번 달 지출이 "평소"(prevMonth 이전 3개월 평균) 대비 얼마나 늘거나 줄었는지로 코칭 문구
+    // 판정 자료를 만든다. 자립준비청년은 수입이 자립수당 등으로 고정·소액인 경우가 많아 지출률
+    // (지출/수입)로는 구간이 갈리지 않아서, 자기 과거 지출과 비교하는 방식으로 바꿨다.
+    //   증감률 = (저번 달 지출 - 평균) / 평균 * 100
+    //   -10% 이하   : 저축여력 (SURPLUS)
+    //   -10%~+10%  : 평소와 비슷 — 코칭 없음 (null)
+    //   +10%~+20%  : 주의 (CAUTION) — 급증 카테고리 1개
+    //   +20% 초과   : 적자 (DEFICIT) — 급증 카테고리 2개
+    // 평균은 prevMonth 이전 3개월 중 지출이 실제로 있었던(>0) 달만으로 낸다(prevMonth 자신은
+    // 제외 — 포함하면 편차가 줄어든다). 그런 달이 하나도 없으면 판정 불가로 코칭을 내리지 않는다.
+    private Coaching buildCoaching(List<FinancialTransaction> txns, YearMonth prevMonth, long prevTotalExpense) {
+        List<Long> baselineMonthTotals = new ArrayList<>();
+        for (int i = 1; i <= 3; i++) {
+            YearMonth m = prevMonth.minusMonths(i);
+            long total = TransactionAggregator.sumExpense(txns, m.atDay(1), m.atEndOfMonth());
+            if (total > 0) baselineMonthTotals.add(total);
+        }
+        if (baselineMonthTotals.isEmpty()) return null;
+        double average = baselineMonthTotals.stream().mapToLong(Long::longValue).average().orElseThrow();
+
+        double rate = (prevTotalExpense - average) / average * 100;
+        Tier tier;
+        if (rate <= -10) tier = Tier.SURPLUS;
+        else if (rate <= 10) return null;
+        else if (rate <= 20) tier = Tier.CAUTION;
+        else tier = Tier.DEFICIT;
+
+        int changeRate = (int) Math.round(rate);
+        Long savedAmount = tier == Tier.SURPLUS ? Math.round(average - prevTotalExpense) : null;
+        Long excessAmount = tier == Tier.DEFICIT ? Math.round(prevTotalExpense - average) : null;
+
+        List<SurgeCategory> surgeCategories = List.of();
+        Long reductionTargetAmount = null;
+        if (tier == Tier.CAUTION || tier == Tier.DEFICIT) {
+            YearMonth beforePrevMonth = prevMonth.minusMonths(1);
+            int limit = tier == Tier.CAUTION ? 1 : 2;
+            surgeCategories = Arrays.stream(ExpenseCategory.values())
+                    .filter(c -> c != ExpenseCategory.SAVINGS) // 저축 이체 증가는 절감 대상이 아니다
+                    .map(c -> new SurgeCategory(c,
+                            TransactionAggregator.sumCategory(txns, c, prevMonth.atDay(1), prevMonth.atEndOfMonth())
+                                    - TransactionAggregator.sumCategory(txns, c, beforePrevMonth.atDay(1), beforePrevMonth.atEndOfMonth())))
+                    .filter(s -> s.increaseAmount() > 0)
+                    .sorted(Comparator.comparingLong(SurgeCategory::increaseAmount).reversed())
+                    .limit(limit)
+                    .toList();
+            long increaseSum = surgeCategories.stream().mapToLong(SurgeCategory::increaseAmount).sum();
+            reductionTargetAmount = increaseSum == 0 ? null : Math.round(increaseSum / 2.0);
+        }
+
+        return new Coaching(tier, changeRate, savedAmount, excessAmount, surgeCategories, reductionTargetAmount);
     }
 }

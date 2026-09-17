@@ -3,6 +3,7 @@
 <div align="center">
 
   <!-- TODO: 팀/서비스 로고 이미지 -->
+  <img width="400" height="400" alt="mascots" src="https://github.com/user-attachments/assets/a439e1a3-0c28-4acb-8f72-1530822ff978" />
 
   **자립준비청년의 D-1825 자립을 함께 준비하는 서비스**
 
